@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>ELMS – Analytics</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg:#0f0f13; --card:#16161d; --card2:#1c1c26; --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6; --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; padding:28px; }
+        .back-btn { display:inline-flex; align-items:center; gap:8px; color:var(--muted); text-decoration:none; font-size:0.85rem; margin-bottom:20px; padding:8px 16px; background:var(--card); border:1px solid var(--border); border-radius:10px; }
+        .back-btn:hover { color:#fff; border-color:var(--green); }
+        .chart-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px; margin-bottom:20px; }
+        .chart-card canvas { max-height:260px; }
+        .stat-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; text-align:center; }
+        .stat-value { font-size:1.6rem; font-weight:900; margin:6px 0; }
+        .stat-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; font-weight:700; }
+        .perf-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:12px; display:flex; align-items:center; gap:16px; }
+        .perf-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+        .export-btn { background:linear-gradient(135deg,var(--green),var(--green2)); color:#fff; border:none; border-radius:10px; padding:10px 20px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+        .export-btn:disabled { opacity:0.6; cursor:not-allowed; }
+        .insight { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:10px; display:flex; align-items:center; gap:10px; }
+        .insight i { color:var(--cyan); }
+        .health-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+        .health-row:last-child { margin-bottom:0; }
+        .health-bar { flex:1; height:6px; background:#1a1a2e; border-radius:4px; overflow:hidden; }
+        .health-fill { height:100%; background:var(--green); border-radius:4px; }
+        .saved-badge { background:rgba(45,181,93,0.15); color:var(--green); padding:4px 10px; border-radius:6px; font-size:0.7rem; font-weight:700; margin-left:8px; }
+        .reports-history { max-height:200px; overflow-y:auto; }
+        .report-item { background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+        .report-item:last-child { margin-bottom:0; }
+        .table-dark { background:var(--card2); color:var(--text); border-collapse:collapse; width:100%; }
+        .table-dark th { background:var(--card); padding:12px 10px; text-align:left; border-bottom:1px solid var(--border); color:var(--muted); font-weight:600; text-transform:uppercase; font-size:0.7rem; }
+        .table-dark td { padding:12px 10px; border-bottom:1px solid var(--border); }
+        .table-dark tbody tr:hover { background:rgba(45,181,93,0.08); }
+        .status-badge { padding:4px 8px; border-radius:6px; font-size:0.7rem; font-weight:700; }
+        .status-active { background:rgba(45,181,93,0.15); color:var(--green); }
+        .status-inactive { background:rgba(239,68,68,0.15); color:var(--red); }
+        .score-indicator { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+    </style>
+</head>
+<body>
+    <a href="/web/admin/dashboard" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    <h4 class="fw-bold mb-4"><i class="fas fa-chart-bar me-2" style="color:var(--purple);"></i>Analytics Dashboard</h4>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Avg Score</div><div class="stat-value" style="color:var(--green);" id="avgScore">–</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Attendance Rate</div><div class="stat-value" style="color:var(--blue);" id="attRate">–</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Total Students</div><div class="stat-value" style="color:var(--purple);" id="totalStudents">–</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Courses</div><div class="stat-value" style="color:var(--orange);" id="totalCourses">–</div></div></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Top Course</div><div class="stat-value" style="color:var(--cyan);font-size:1rem;" id="topCourse">–</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Lowest Course</div><div class="stat-value" style="color:var(--red);font-size:1rem;" id="lowCourse">–</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Total Submissions</div><div class="stat-value" style="color:var(--green);" id="totalSubs">–</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Health Index</div><div class="stat-value" style="color:var(--purple);" id="healthIndex">–</div></div></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-7">
+            <div class="chart-card"><h6 class="fw-bold mb-3"><i class="fas fa-chart-line me-2 text-success"></i>Course Performance</h6><canvas id="perfChart"></canvas></div>
+        </div>
+        <div class="col-lg-5">
+            <div class="chart-card h-100"><h6 class="fw-bold mb-3"><i class="fas fa-chart-pie me-2" style="color:var(--cyan);"></i>Course Status Distribution</h6><canvas id="statusChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="chart-card"><h6 class="fw-bold mb-3"><i class="fas fa-users me-2" style="color:var(--blue);"></i>Student Performance (by Progress)</h6><canvas id="studentPerfChart"></canvas></div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card"><h6 class="fw-bold mb-3"><i class="fas fa-graduation-cap me-2" style="color:var(--purple);"></i>Student Status Overview</h6><canvas id="progressChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-lightbulb me-2" style="color:var(--orange);"></i>Insights</h6>
+                    <div>
+                        <button class="export-btn" id="exportBtn" onclick="exportAnalytics()"><i class="fas fa-download"></i>Export & Save</button>
+                        <span id="savedBadge" class="saved-badge" style="display:none;">Saved to DB</span>
+                    </div>
+                </div>
+                <div id="insightsList">
+                    <div class="insight"><i class="fas fa-signal"></i><div>Loading insights...</div></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-heartbeat me-2" style="color:var(--green);"></i>Course Health</h6>
+                <div id="healthList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-trophy me-2" style="color:var(--orange);"></i>Course Performance Reports</h6>
+                <div id="courseReports"><div style="text-align:center;color:var(--muted);padding:30px;">Loading...</div></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-history me-2" style="color:var(--cyan);"></i>Recent Export History</h6>
+                <div id="reportHistory" class="reports-history"><div style="text-align:center;color:var(--muted);padding:20px;">Loading...</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-12">
+            <div class="chart-card">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-chart-area me-2" style="color:var(--purple);"></i>Course Comparison Overview</h6>
+                    <button class="export-btn" onclick="refreshComparison()" style="background:var(--blue);"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+                <div id="comparisonTable">
+                    <table class="table table-dark table-hover" style="font-size:0.85rem;">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Status</th>
+                                <th>Avg Score</th>
+                                <th>Attendance</th>
+                                <th>Engagement</th>
+                                <th>Submissions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparisonBody">
+                            <tr><td colspan="6" style="text-align:center;color:var(--muted);">Loading comparison data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const token = localStorage.getItem('token');
+    const roleRaw = localStorage.getItem('role') || '';
+    const role = roleRaw.toUpperCase().replace('ROLE_', '').trim();
+    if (!token || role !== 'ADMIN') window.location.href = '/login';
+    const AUTH = { 'Authorization': 'Bearer ' + token };
+    const adminName = localStorage.getItem('name') || 'Admin';
+
+    // Apply theme from settings
+    (function applyTheme() {
+        const theme = localStorage.getItem('uiTheme') || 'DARK';
+        const accent = localStorage.getItem('accentColor') || '#2db55d';
+        const r = document.documentElement;
+        r.style.setProperty('--green', accent);
+        r.style.setProperty('--green2', accent);
+        if (theme === 'LIGHT') {
+            r.style.setProperty('--bg', '#f8fafc');
+            r.style.setProperty('--card', '#ffffff');
+            r.style.setProperty('--card2', '#f1f5f9');
+            r.style.setProperty('--text', '#0f172a');
+            r.style.setProperty('--muted', '#64748b');
+            r.style.setProperty('--border', '#dbeafe');
+        } else if (theme === 'AMOLED') {
+            r.style.setProperty('--bg', '#000');
+            r.style.setProperty('--card', '#0b0b10');
+            r.style.setProperty('--card2', '#111117');
+            r.style.setProperty('--text', '#f8fafc');
+            r.style.setProperty('--muted', '#94a3b8');
+            r.style.setProperty('--border', '#1f2937');
+        }
+    })();
+
+    async function apiFetch(url) { 
+        try { 
+            const r = await fetch(url, { headers: AUTH }); 
+            if (!r.ok) {
+                console.error('API Error:', url, r.status);
+                return null;
+            }
+            return await r.json(); 
+        } catch(e) { 
+            console.error('Fetch error:', url, e);
+            return null; 
+        } 
+    }
+    function safe(v) { return v == null ? 0 : v; }
+    function shortName(name) { return (name || '').length > 12 ? name.substring(0, 10) + '…' : (name || 'Untitled'); }
+
+    // Store chart instances for cleanup
+    let perfChartInstance, statusChartInstance, studentPerfChartInstance, progressChartInstance;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        console.log('Loading analytics data...');
+        
+        const overview = await apiFetch('/api/analytics/overview');
+        console.log('Overview data:', overview);
+        
+        if (!overview) {
+            console.error('Failed to load analytics overview');
+            return;
+        }
+        
+        const reports = overview?.courseReports || [];
+        const courseLabels = reports.map(r => shortName(r.title));
+        const courseAvgs = reports.map(r => safe(r.averageScore));
+        const avgAll = safe(overview?.averageScore);
+        const attPct = safe(overview?.attendancePercentage);
+
+        // Update stat cards
+        document.getElementById('avgScore').textContent = avgAll + '%';
+        document.getElementById('attRate').textContent = attPct + '%';
+        document.getElementById('totalSubs').textContent = safe(overview?.totalSubmissions);
+        document.getElementById('totalCourses').textContent = safe(overview?.totalCourses);
+
+        // Use backend student counts
+        const totalStudents = safe(overview?.totalStudents);
+        document.getElementById('totalStudents').textContent = totalStudents;
+
+        const top = overview?.topCourse;
+        const low = overview?.lowestCourse;
+        document.getElementById('topCourse').textContent = top ? `${shortName(top.title)} (${safe(top.averageScore)}%)` : '–';
+        document.getElementById('lowCourse').textContent = low ? `${shortName(low.title)} (${safe(low.averageScore)}%)` : '–';
+        document.getElementById('healthIndex').textContent = safe(overview?.healthIndex) + '%';
+
+        // Performance bar chart
+        if (perfChartInstance) perfChartInstance.destroy();
+        perfChartInstance = new Chart(document.getElementById('perfChart'), {
+            type: 'bar',
+            data: { 
+                labels: courseLabels, 
+                datasets: [{ 
+                    label: 'Avg Score', 
+                    data: courseAvgs, 
+                    backgroundColor: 'rgba(45,181,93,0.6)', 
+                    borderRadius: 6 
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                plugins: { legend: { display: false } }, 
+                scales: { 
+                    x: { ticks: { color: '#6b7280' } }, 
+                    y: { ticks: { color: '#6b7280' }, min: 0, max: 100 } 
+                } 
+            }
+        });
+
+        // Course Status Distribution - using backend data
+        const activeCourses = safe(overview?.activeCourses);
+        const inactiveCourses = safe(overview?.inactiveCourses);
+        const totalCourses = safe(overview?.totalCourses);
+        
+        console.log('Course distribution:', { activeCourses, inactiveCourses, totalCourses });
+        
+        if (statusChartInstance) statusChartInstance.destroy();
+        
+        // Check if there's data to show
+        if (totalCourses > 0) {
+            // Build dynamic labels and data - only show categories with values
+            const courseLabels = [];
+            const courseData = [];
+            const courseColors = [];
+            
+            if (activeCourses > 0) {
+                courseLabels.push(`Active (${activeCourses})`);
+                courseData.push(activeCourses);
+                courseColors.push('#2db55d');
+            }
+            if (inactiveCourses > 0) {
+                courseLabels.push(`Inactive (${inactiveCourses})`);
+                courseData.push(inactiveCourses);
+                courseColors.push('#6b7280');
+            }
+            
+            // If only one type exists, add it anyway
+            if (courseLabels.length === 0) {
+                courseLabels.push('All Courses');
+                courseData.push(totalCourses);
+                courseColors.push('#2db55d');
+            }
+            
+            statusChartInstance = new Chart(document.getElementById('statusChart'), {
+                type: 'doughnut',
+                data: { 
+                    labels: courseLabels, 
+                    datasets: [{ 
+                        data: courseData, 
+                        backgroundColor: courseColors, 
+                        borderWidth: 0 
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    cutout: '60%', 
+                    plugins: { 
+                        legend: { 
+                            labels: { color: '#9ca3af', font: { size: 11 } },
+                            position: 'bottom'
+                        } 
+                    } 
+                }
+            });
+        } else {
+            // Show placeholder when no courses
+            statusChartInstance = new Chart(document.getElementById('statusChart'), {
+                type: 'doughnut',
+                data: { 
+                    labels: ['No Courses Yet'], 
+                    datasets: [{ 
+                        data: [1], 
+                        backgroundColor: ['#374151'], 
+                        borderWidth: 0 
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    cutout: '60%', 
+                    plugins: { 
+                        legend: { 
+                            labels: { color: '#6b7280', font: { size: 11 } },
+                            position: 'bottom'
+                        },
+                        tooltip: { enabled: false }
+                    } 
+                }
+            });
+        }
+
+        // Student Performance by Progress Range - fetch from progress endpoint
+        const progress = await apiFetch('/api/analytics/progress/students');
+        console.log('Student progress data:', progress);
+        
+        let excellent = 0, good = 0, average = 0, belowAvg = 0, poor = 0;
+        if (progress && progress.length) {
+            progress.forEach(s => {
+                const p = s.progress || 0;
+                if (p >= 90) excellent++;
+                else if (p >= 75) good++;
+                else if (p >= 60) average++;
+                else if (p >= 40) belowAvg++;
+                else poor++;
+            });
+        }
+        
+        console.log('Performance distribution:', { excellent, good, average, belowAvg, poor });
+        
+        if (studentPerfChartInstance) studentPerfChartInstance.destroy();
+        
+        const totalProgress = excellent + good + average + belowAvg + poor;
+        
+        studentPerfChartInstance = new Chart(document.getElementById('studentPerfChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Excellent (90+)', 'Good (75-89)', 'Average (60-74)', 'Below Avg (40-59)', 'Needs Help (<40)'],
+                datasets: [{ 
+                    label: 'Students', 
+                    data: totalProgress > 0 ? [excellent, good, average, belowAvg, poor] : [0, 0, 0, 0, 0], 
+                    backgroundColor: ['#2db55d', '#3b82f6', '#f59e0b', '#ef4444', '#6b7280'], 
+                    borderRadius: 6 
+                }]
+            },
+            options: { 
+                indexAxis: 'y', 
+                responsive: true, 
+                plugins: { 
+                    legend: { display: false },
+                    title: {
+                        display: totalProgress === 0,
+                        text: 'No student progress data available',
+                        color: '#6b7280',
+                        font: { size: 12 }
+                    }
+                }, 
+                scales: { 
+                    x: { 
+                        ticks: { color: '#6b7280' },
+                        suggestedMin: 0,
+                        suggestedMax: totalProgress > 0 ? undefined : 5
+                    }, 
+                    y: { ticks: { color: '#6b7280' } } 
+                } 
+            }
+        });
+
+        // Student Status Overview - use backend data
+        const activeStudents = safe(overview?.activeStudents);
+        const graduatedStudents = safe(overview?.graduatedStudents);
+        const droppedStudents = safe(overview?.droppedStudents);
+        const totalStudentsCount = activeStudents + graduatedStudents + droppedStudents;
+        
+        console.log('Student status:', { activeStudents, graduatedStudents, droppedStudents, totalStudentsCount });
+        
+        if (progressChartInstance) progressChartInstance.destroy();
+        
+        // Check if there's data to show
+        if (totalStudentsCount > 0) {
+            // Build dynamic labels and data with counts
+            const studentLabels = [];
+            const studentData = [];
+            const studentColors = [];
+            
+            if (activeStudents > 0) {
+                studentLabels.push(`Active (${activeStudents})`);
+                studentData.push(activeStudents);
+                studentColors.push('#3b82f6');
+            }
+            if (graduatedStudents > 0) {
+                studentLabels.push(`Graduated (${graduatedStudents})`);
+                studentData.push(graduatedStudents);
+                studentColors.push('#8b5cf6');
+            }
+            if (droppedStudents > 0) {
+                studentLabels.push(`Dropped (${droppedStudents})`);
+                studentData.push(droppedStudents);
+                studentColors.push('#ef4444');
+            }
+            
+            // If only one type exists but we have students
+            if (studentLabels.length === 0 && totalStudentsCount > 0) {
+                studentLabels.push(`All Students (${totalStudentsCount})`);
+                studentData.push(totalStudentsCount);
+                studentColors.push('#3b82f6');
+            }
+            
+            progressChartInstance = new Chart(document.getElementById('progressChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: studentLabels,
+                    datasets: [{ 
+                        data: studentData, 
+                        backgroundColor: studentColors, 
+                        borderWidth: 0 
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    cutout: '60%', 
+                    plugins: { 
+                        legend: { 
+                            labels: { color: '#9ca3af', font: { size: 11 } },
+                            position: 'bottom'
+                        } 
+                    } 
+                }
+            });
+        } else {
+            // Show placeholder when no students
+            progressChartInstance = new Chart(document.getElementById('progressChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['No Students Yet'],
+                    datasets: [{ 
+                        data: [1], 
+                        backgroundColor: ['#374151'], 
+                        borderWidth: 0 
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    cutout: '60%', 
+                    plugins: { 
+                        legend: { 
+                            labels: { color: '#6b7280', font: { size: 11 } },
+                            position: 'bottom'
+                        },
+                        tooltip: { enabled: false }
+                    } 
+                }
+            });
+        }
+
+        // Insights - more comprehensive
+        const insights = [];
+        if (avgAll > 0) {
+            if (avgAll >= 80) insights.push(`Excellent overall performance! Average score is ${avgAll}%.`);
+            else if (avgAll >= 60) insights.push(`Good overall performance with average score of ${avgAll}%.`);
+            else insights.push(`Overall average score is ${avgAll}%. Consider improvement strategies.`);
+        }
+        
+        if (attPct > 0) {
+            if (attPct >= 90) insights.push(`Outstanding attendance rate at ${attPct}%!`);
+            else if (attPct >= 70) insights.push(`Attendance rate is ${attPct}%. Room for improvement.`);
+            else insights.push(`Attendance at ${attPct}% needs attention.`);
+        }
+        
+        if (top && low && top.title !== low.title) {
+            insights.push(`Best performer: ${top.title} (${safe(top.averageScore)}%)`);
+            if (safe(low.averageScore) < 50) {
+                insights.push(`⚠️ "${low.title}" needs attention (${safe(low.averageScore)}%)`);
+            }
+        }
+        
+        if (activeCourses > 0 || inactiveCourses > 0) {
+            insights.push(`${activeCourses} active courses, ${inactiveCourses} inactive.`);
+        }
+        
+        if (totalStudents > 0) {
+            const activeRate = Math.round((activeStudents / totalStudents) * 100);
+            insights.push(`${activeStudents} active students (${activeRate}% of total ${totalStudents}).`);
+            if (graduatedStudents > 0) insights.push(`🎓 ${graduatedStudents} students have graduated.`);
+            if (droppedStudents > 0) insights.push(`⚠️ ${droppedStudents} students have dropped.`);
+        }
+        
+        const insightEl = document.getElementById('insightsList');
+        insightEl.innerHTML = insights.length
+            ? insights.map(t => `<div class="insight"><i class="fas fa-check-circle"></i><div>${t}</div></div>`).join('')
+            : '<div class="insight"><i class="fas fa-info-circle"></i><div>No insights available yet. Add more courses and students to see analytics.</div></div>';
+
+        // Course health list
+        const healthEl = document.getElementById('healthList');
+        if (!reports.length) {
+            healthEl.innerHTML = '<div class="insight"><i class="fas fa-info-circle"></i><div>No course data available.</div></div>';
+        } else {
+            healthEl.innerHTML = reports.slice(0, 6).map(r => {
+                const pct = r.averageScore || 0;
+                const color = pct >= 70 ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
+                const status = r.status || 'ACTIVE';
+                const statusBadge = status === 'INACTIVE' ? '<span style="font-size:0.65rem;background:var(--red);color:#fff;padding:2px 6px;border-radius:4px;margin-left:4px;">Inactive</span>' : '';
+                return `
+                    <div class="health-row">
+                        <div style="min-width:100px;font-size:0.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.title}${statusBadge}</div>
+                        <div class="health-bar"><div class="health-fill" style="width:${pct}%;background:${color};"></div></div>
+                        <div style="min-width:34px;text-align:right;font-weight:700;color:${color};">${pct}%</div>
+                    </div>`;
+            }).join('');
+        }
+
+        // Reports list
+        const el = document.getElementById('courseReports');
+        if (!reports.length) { 
+            el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">No course data available.</div>'; 
+        } else {
+            const colors = ['var(--green)','var(--blue)','var(--purple)','var(--orange)','var(--cyan)'];
+            el.innerHTML = reports.slice(0, 5).map((r, i) => `
+                <div class="perf-card">
+                    <div class="perf-icon" style="background:${colors[i%5]}22;color:${colors[i%5]};"><i class="fas fa-book"></i></div>
+                    <div style="flex:1;"><div style="font-weight:700;">${r.title}</div><div style="font-size:0.78rem;color:var(--muted);">${safe(r.totalSubmissions)} subs · ${safe(r.gradedSubmissions)} graded</div></div>
+                    <div style="text-align:right;"><div style="font-weight:900;color:${colors[i%5]};font-size:1.2rem;">${r.averageScore || 0}%</div></div>
+                </div>`).join('');
+        }
+
+        // Load recent reports
+        loadRecentReports();
+        
+        // Auto-generate snapshots for trends (background)
+        generateSnapshotsBackground();
+    });
+    
+    async function generateSnapshotsBackground() {
+        try {
+            await fetch('/api/analytics/snapshots/generate-all', { 
+                method: 'POST', 
+                headers: AUTH 
+            });
+            console.log('Snapshots generated in background');
+        } catch(e) {
+            console.log('Background snapshot generation skipped');
+        }
+    }
+
+    async function loadRecentReports() {
+        const reports = await apiFetch('/api/analytics/reports/recent');
+        const el = document.getElementById('reportHistory');
+        if (!reports || !reports.length) {
+            el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">No export history yet. Click "Export & Save" to create one.</div>';
+            return;
+        }
+        el.innerHTML = reports.map(r => {
+            const date = new Date(r.generatedAt).toLocaleString();
+            return `
+                <div class="report-item">
+                    <div>
+                        <div style="font-weight:600;font-size:0.82rem;">${r.reportType} Report</div>
+                        <div style="font-size:0.72rem;color:var(--muted);">${date} by ${r.generatedBy || 'Admin'}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.9rem;font-weight:700;color:var(--green);">${r.avgScore || 0}%</div>
+                        <div style="font-size:0.68rem;color:var(--muted);">${r.totalCourses || 0} courses · ${r.totalSubmissions || 0} subs</div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    async function exportAnalytics() {
+        const btn = document.getElementById('exportBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        // Build CSV with comprehensive data
+        const rows = [ ['Metric','Value','Timestamp'] ];
+        const timestamp = new Date().toISOString();
+        
+        ['avgScore','attRate','totalSubs','totalCourses','totalStudents','topCourse','lowCourse','healthIndex'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) rows.push([id, el.textContent || '0', timestamp]);
+        });
+        const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+
+        // Save to database
+        try {
+            const response = await fetch('/api/analytics/export/save', {
+                method: 'POST',
+                headers: { ...AUTH, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    reportType: 'OVERVIEW',
+                    csvData: csv,
+                    generatedBy: adminName
+                })
+            });
+            
+            if (response.ok) {
+                document.getElementById('savedBadge').style.display = 'inline';
+                setTimeout(() => { document.getElementById('savedBadge').style.display = 'none'; }, 3000);
+                
+                // Refresh history
+                await loadRecentReports();
+            } else {
+                console.error('Failed to save report:', response.status);
+            }
+        } catch(e) {
+            console.error('Failed to save report:', e);
+        }
+
+        // Also download CSV
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `analytics_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-download"></i> Export & Save';
+    }
+    
+    async function refreshComparison() {
+        loadComparisonData();
+    }
+    
+    async function loadComparisonData() {
+        const data = await apiFetch('/api/analytics/comparative');
+        console.log('Comparison data:', data);
+        
+        const tbody = document.getElementById('comparisonBody');
+        if (!data || !data.courseComparisons || !data.courseComparisons.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);">No comparison data available.</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = data.courseComparisons.map(c => {
+            const scoreColor = c.averageScore >= 70 ? 'var(--green)' : c.averageScore >= 50 ? 'var(--orange)' : 'var(--red)';
+            const attColor = c.attendanceRate >= 80 ? 'var(--green)' : c.attendanceRate >= 60 ? 'var(--orange)' : 'var(--red)';
+            const engColor = c.engagementIndex >= 70 ? 'var(--green)' : c.engagementIndex >= 50 ? 'var(--orange)' : 'var(--red)';
+            const statusClass = c.status === 'ACTIVE' ? 'status-active' : 'status-inactive';
+            
+            return `
+                <tr>
+                    <td style="font-weight:600;">${c.title || 'Untitled'}</td>
+                    <td><span class="status-badge ${statusClass}">${c.status || 'ACTIVE'}</span></td>
+                    <td><span class="score-indicator" style="background:${scoreColor};"></span>${c.averageScore || 0}%</td>
+                    <td><span class="score-indicator" style="background:${attColor};"></span>${c.attendanceRate || 0}%</td>
+                    <td><span class="score-indicator" style="background:${engColor};"></span>${c.engagementIndex || 0}%</td>
+                    <td>${c.totalSubmissions || 0}</td>
+                </tr>`;
+        }).join('');
+    }
+    
+    // Load comparison data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(loadComparisonData, 500);
+    });
+</script>
+</body>
+</html>

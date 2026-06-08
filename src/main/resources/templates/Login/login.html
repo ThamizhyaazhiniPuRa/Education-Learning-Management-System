@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>ELMS | Sign In</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root{
+            --dark-bg:#282828; --card-bg:#1f1f1f; --input-bg:#2a2a2a;
+            --accent:#2db55d; --text:#ffffff; --muted:#c8d0da;
+            --border:#444;
+        }
+        body{
+            margin:0; min-height:100vh; background:var(--dark-bg); color:var(--text);
+            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+        }
+        .wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+        .card-auth{
+            width:100%; max-width:520px; background:var(--card-bg); border:1px solid #3a3a3a;
+            border-radius:16px; padding:30px; box-shadow:0 10px 35px rgba(0,0,0,.35);
+        }
+        .brand{color:#fff; text-decoration:none; font-weight:700; font-size:1.4rem;}
+        .label{color:var(--muted); font-size:.86rem; font-weight:600; margin-bottom:6px; display:block;}
+        .form-control,.form-select{
+            background:var(--input-bg); border:1px solid var(--border); color:#fff;
+        }
+        .form-control::placeholder{color:#a9b1bb; opacity:1;}
+        .form-control:focus,.form-select:focus{
+            background:var(--input-bg); color:#fff; border-color:var(--accent); box-shadow:none;
+        }
+        .btn-main{
+            background:var(--accent); color:#fff; border:none; border-radius:25px; padding:12px 20px; font-weight:600;
+        }
+        .btn-main:hover{background:#269e50; color:#fff;}
+        .btn-outline{
+            background:transparent; color:var(--accent); border:1px solid var(--accent); border-radius:25px; padding:12px 20px; font-weight:600;
+        }
+        .btn-outline:hover{background:var(--accent); color:#fff;}
+        .muted-link{color:var(--muted);}
+        .muted-link a{color:var(--accent); text-decoration:none; font-weight:600;}
+        .muted-link a:hover{text-decoration:underline;}
+        .forgot-link{color:var(--accent); text-decoration:none; font-size:0.85rem; cursor:pointer;}
+        .forgot-link:hover{text-decoration:underline;}
+        .code-input{text-align:center; font-size:1.5rem; letter-spacing:8px; font-weight:700;}
+        .step-indicator{display:flex; gap:8px; margin-bottom:20px;}
+        .step{width:10px; height:10px; border-radius:50%; background:#444;}
+        .step.active{background:var(--accent);}
+        .back-link{color:var(--muted); font-size:0.85rem; cursor:pointer; display:flex; align-items:center; gap:6px;}
+        .back-link:hover{color:#fff;}
+        .hidden{display:none !important;}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="card-auth">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a class="brand" href="/"><i class="fas fa-graduation-cap me-2 text-warning"></i>ELMS</a>
+            <a href="/register" class="text-decoration-none" style="color:var(--accent);font-weight:600;">Create Account</a>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <div id="loginSection">
+            <h3 class="mb-3">Sign In</h3>
+            <div id="msg"></div>
+
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label class="label" for="email">Email Address</label>
+                    <input id="email" class="form-control" type="email" name="email" placeholder="name@example.com" required>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="label" for="password">Password</label>
+                        <span class="forgot-link" onclick="showForgotPassword()">Forgot Password?</span>
+                    </div>
+                    <input id="password" class="form-control" type="password" name="password" placeholder="Enter your password" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="label" for="role">Role</label>
+                    <select id="role" class="form-select" name="role" required>
+                        <option value="">Select role</option>
+                        <option value="ADMIN">Admin</option>
+                        <option value="STUDENT">Student</option>
+                        <option value="INSTRUCTOR">Instructor</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-main w-100" type="submit">Login <i class="fas fa-chevron-right ms-2 small"></i></button>
+            </form>
+
+            <p class="text-center mt-4 mb-0 muted-link">New student? <a href="/register">Register here</a></p>
+        </div>
+
+        <!-- FORGOT PASSWORD - STEP 1: Enter Email -->
+        <div id="forgotSection1" class="hidden">
+            <span class="back-link mb-3" onclick="showLogin()"><i class="fas fa-arrow-left"></i> Back to Login</span>
+            <h3 class="mb-2">Forgot Password</h3>
+            <p class="text-muted mb-4" style="font-size:0.9rem;">Enter your student email to receive a reset code.</p>
+            
+            <div class="step-indicator">
+                <div class="step active"></div>
+                <div class="step"></div>
+                <div class="step"></div>
+            </div>
+            
+            <div id="forgotMsg1"></div>
+            
+            <form id="forgotForm1">
+                <div class="mb-4">
+                    <label class="label" for="resetEmail">Email Address</label>
+                    <input id="resetEmail" class="form-control" type="email" placeholder="Enter your student email" required>
+                </div>
+                <button class="btn btn-main w-100" type="submit">
+                    <i class="fas fa-paper-plane me-2"></i>Send Reset Code
+                </button>
+            </form>
+        </div>
+
+        <!-- FORGOT PASSWORD - STEP 2: Enter Code -->
+        <div id="forgotSection2" class="hidden">
+            <span class="back-link mb-3" onclick="showForgotStep1()"><i class="fas fa-arrow-left"></i> Back</span>
+            <h3 class="mb-2">Enter Reset Code</h3>
+            <p class="text-muted mb-4" style="font-size:0.9rem;">Check your email for the 6-digit code.</p>
+            
+            <div class="step-indicator">
+                <div class="step active"></div>
+                <div class="step active"></div>
+                <div class="step"></div>
+            </div>
+            
+            <div id="forgotMsg2"></div>
+            
+            <form id="forgotForm2">
+                <div class="mb-3">
+                    <label class="label">Verification Code</label>
+                    <input id="resetCode" class="form-control code-input" type="text" maxlength="6" placeholder="000000" required>
+                </div>
+                <button class="btn btn-main w-100" type="submit">
+                    <i class="fas fa-check me-2"></i>Verify Code
+                </button>
+                <p class="text-center mt-3 mb-0">
+                    <span class="forgot-link" onclick="resendCode()">Resend Code</span>
+                </p>
+            </form>
+        </div>
+
+        <!-- FORGOT PASSWORD - STEP 3: New Password -->
+        <div id="forgotSection3" class="hidden">
+            <span class="back-link mb-3" onclick="showForgotStep2()"><i class="fas fa-arrow-left"></i> Back</span>
+            <h3 class="mb-2">Set New Password</h3>
+            <p class="text-muted mb-4" style="font-size:0.9rem;">Choose a strong password for your account.</p>
+            
+            <div class="step-indicator">
+                <div class="step active"></div>
+                <div class="step active"></div>
+                <div class="step active"></div>
+            </div>
+            
+            <div id="forgotMsg3"></div>
+            
+            <form id="forgotForm3">
+                <div class="mb-3">
+                    <label class="label" for="newPassword">New Password</label>
+                    <input id="newPassword" class="form-control" type="password" placeholder="At least 6 characters" required minlength="6">
+                </div>
+                <div class="mb-4">
+                    <label class="label" for="confirmPassword">Confirm Password</label>
+                    <input id="confirmPassword" class="form-control" type="password" placeholder="Confirm your password" required>
+                </div>
+                <button class="btn btn-main w-100" type="submit">
+                    <i class="fas fa-lock me-2"></i>Reset Password
+                </button>
+            </form>
+        </div>
+
+        <!-- SUCCESS MESSAGE -->
+        <div id="successSection" class="hidden">
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle fa-4x mb-3" style="color:var(--accent);"></i>
+                <h3 class="mb-3">Password Reset Successful!</h3>
+                <p class="text-muted mb-4">Your password has been updated. You can now login with your new password.</p>
+                <button class="btn btn-main" onclick="showLogin()">
+                    <i class="fas fa-sign-in-alt me-2"></i>Go to Login
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store reset data
+let resetData = { email: '', token: '', code: '' };
+
+// Show/hide sections
+function hideAllSections() {
+    document.querySelectorAll('#loginSection, #forgotSection1, #forgotSection2, #forgotSection3, #successSection')
+        .forEach(el => el.classList.add('hidden'));
+}
+
+function showLogin() {
+    hideAllSections();
+    document.getElementById('loginSection').classList.remove('hidden');
+    resetData = { email: '', token: '', code: '' };
+}
+
+function showForgotPassword() {
+    hideAllSections();
+    document.getElementById('forgotSection1').classList.remove('hidden');
+    document.getElementById('forgotMsg1').innerHTML = '';
+}
+
+function showForgotStep1() {
+    hideAllSections();
+    document.getElementById('forgotSection1').classList.remove('hidden');
+}
+
+function showForgotStep2() {
+    hideAllSections();
+    document.getElementById('forgotSection2').classList.remove('hidden');
+}
+
+function showForgotStep3() {
+    hideAllSections();
+    document.getElementById('forgotSection3').classList.remove('hidden');
+}
+
+function showSuccess() {
+    hideAllSections();
+    document.getElementById('successSection').classList.remove('hidden');
+}
+
+// Login form
+
+loginForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const payload = {
+        email: loginForm.email.value.trim(),
+        password: loginForm.password.value,
+        role: loginForm.role.value
+    };
+
+    const res = await fetch('/api/auth/login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+    });
+
+    if(!res.ok){
+        const txt = await res.text();
+        msg.innerHTML = `<div class="alert alert-danger">Invalid credentials / role${txt ? ' - ' + txt : ''}</div>`;
+        return;
+    }
+
+    const data = await res.json();
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('role', data.role);
+    localStorage.setItem('name', data.name);
+    if (data.role === 'STUDENT' || data.role === 'INSTRUCTOR') {
+        localStorage.setItem('studentId', data.studentId || '');
+        localStorage.setItem('email', data.email || '');
+        localStorage.setItem('phone', data.phone || '');
+        localStorage.setItem('program', data.program || '');
+    } else {
+        localStorage.removeItem('studentId');
+        localStorage.removeItem('email');
+        localStorage.removeItem('phone');
+        localStorage.removeItem('program');
+    }
+
+    if (data.role === 'ADMIN')       location.href = '/web/admin/dashboard';
+    else if (data.role === 'INSTRUCTOR') location.href = '/instructor/dashboard';
+    else                             location.href = '/student/dashboard';
+};
+
+// Step 1: Request reset code
+forgotForm1.onsubmit = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('resetEmail').value.trim();
+    const msgEl = document.getElementById('forgotMsg1');
+    
+    msgEl.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Sending reset code...</div>';
+    
+    try {
+        const res = await fetch('/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            msgEl.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to send reset code'}</div>`;
+            return;
+        }
+        
+        resetData.email = email;
+        resetData.token = data.token;
+        
+        document.getElementById('forgotMsg2').innerHTML = 
+            `<div class="alert alert-success"><i class="fas fa-check me-2"></i>Code sent to ${email}</div>`;
+        showForgotStep2();
+        
+    } catch (err) {
+        msgEl.innerHTML = '<div class="alert alert-danger">Network error. Please try again.</div>';
+    }
+};
+
+// Step 2: Verify code
+forgotForm2.onsubmit = async (e) => {
+    e.preventDefault();
+    const code = document.getElementById('resetCode').value.trim();
+    const msgEl = document.getElementById('forgotMsg2');
+    
+    if (code.length !== 6) {
+        msgEl.innerHTML = '<div class="alert alert-warning">Please enter the 6-digit code</div>';
+        return;
+    }
+    
+    msgEl.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Verifying code...</div>';
+    
+    try {
+        const res = await fetch('/api/auth/verify-reset-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: resetData.email, code })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok || !data.valid) {
+            msgEl.innerHTML = `<div class="alert alert-danger">${data.error || 'Invalid or expired code'}</div>`;
+            return;
+        }
+        
+        resetData.code = code;
+        showForgotStep3();
+        
+    } catch (err) {
+        msgEl.innerHTML = '<div class="alert alert-danger">Network error. Please try again.</div>';
+    }
+};
+
+// Step 3: Set new password
+forgotForm3.onsubmit = async (e) => {
+    e.preventDefault();
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const msgEl = document.getElementById('forgotMsg3');
+    
+    if (newPassword !== confirmPassword) {
+        msgEl.innerHTML = '<div class="alert alert-danger">Passwords do not match</div>';
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        msgEl.innerHTML = '<div class="alert alert-warning">Password must be at least 6 characters</div>';
+        return;
+    }
+    
+    msgEl.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Resetting password...</div>';
+    
+    try {
+        const res = await fetch('/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                email: resetData.email, 
+                code: resetData.code, 
+                newPassword 
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            msgEl.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to reset password'}</div>`;
+            return;
+        }
+        
+        showSuccess();
+        
+    } catch (err) {
+        msgEl.innerHTML = '<div class="alert alert-danger">Network error. Please try again.</div>';
+    }
+};
+
+// Resend code
+async function resendCode() {
+    const msgEl = document.getElementById('forgotMsg2');
+    msgEl.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Resending code...</div>';
+    
+    try {
+        const res = await fetch('/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: resetData.email })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            msgEl.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to resend code'}</div>`;
+            return;
+        }
+        
+        resetData.token = data.token;
+        msgEl.innerHTML = '<div class="alert alert-success"><i class="fas fa-check me-2"></i>New code sent to your email</div>';
+        
+    } catch (err) {
+        msgEl.innerHTML = '<div class="alert alert-danger">Network error. Please try again.</div>';
+    }
+}
+
+// Auto-format code input
+document.getElementById('resetCode').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').substring(0, 6);
+});
+</script>
+</body>
+</html>

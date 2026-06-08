@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>ELMS – Admin Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root { --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26; --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6; --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+
+        .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:300; transition:transform 0.3s, width 0.3s; }
+        .sidebar-header { padding:24px 20px 20px; border-bottom:1px solid var(--border); }
+        .brand { font-size:1.4rem; font-weight:900; color:#fff; } .brand span { color:var(--green); }
+        .brand-sub { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+        .nav-section-label { color:#4a4a6a; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; padding:12px 8px 6px; margin-top:8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+        .nav-section-label i { font-size:0.62rem; transition:transform 0.2s ease; }
+        .nav-link-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:0.86rem; font-weight:500; transition:all 0.2s; margin-bottom:2px; position:relative; }
+        .nav-link-item i { width:18px; text-align:center; font-size:0.9rem; flex-shrink:0; }
+        .nav-link-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-link-item.active { color:#fff; background:linear-gradient(135deg,rgba(45,181,93,0.2),rgba(45,181,93,0.05)); }
+        .nav-link-item.active i { color:var(--green); }
+        .nav-link-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--green); border-radius:0 3px 3px 0; }
+        .nav-badge { margin-left:auto; background:var(--red); color:#fff; font-size:0.65rem; font-weight:700; padding:2px 7px; border-radius:10px; }
+        .nav-link-item.logout { color:#ef4444; } .nav-link-item.logout:hover { background:rgba(239,68,68,0.1); }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .admin-mini-card { background:var(--card); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .admin-avatar-sm { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--green),var(--green2)); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem; color:#fff; flex-shrink:0; }
+        .admin-name-sm { font-weight:600; font-size:0.82rem; color:#fff; } .admin-role-sm { font-size:0.7rem; color:var(--muted); }
+
+        .topbar { position:fixed; top:0; left:240px; right:0; height:64px; background:rgba(15,15,19,0.95); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200; transition:left 0.3s; }
+        .topbar.sb-collapsed { left:64px; }
+        .topbar-title { font-weight:700; font-size:1.1rem; flex:1; }
+        .topbar-title span { color:var(--muted); font-weight:400; font-size:0.82rem; margin-left:8px; }
+        .icon-btn { width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; transition:0.2s; position:relative; }
+        .icon-btn:hover { border-color:#888; background:rgba(255,255,255,0.12); }
+        .sidebar.collapsed .nav-link-item i { color:#fff !important; font-size:0.95rem; }
+        .notif-dot { position:absolute; top:7px; right:7px; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid var(--bg); }
+
+        .main { margin-left:240px; margin-top:64px; padding:28px; transition:margin-left 0.3s; }
+        .main.sb-collapsed { margin-left:64px; }
+
+        .sidebar.collapsed { width:64px; }
+        .sidebar.collapsed .brand,
+        .sidebar.collapsed .brand-sub,
+        .sidebar.collapsed .nav-section-label,
+        .sidebar.collapsed .admin-name-sm,
+        .sidebar.collapsed .admin-role-sm { display:none; }
+        .sidebar.collapsed .nav-link-item { justify-content:center; font-size:0; padding:11px 0; }
+        .sidebar.collapsed .nav-link-item i { font-size:0.9rem; }
+        .sidebar.collapsed .admin-mini-card { justify-content:center; padding:10px; }
+        .sidebar-toggle { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:5px 7px; border-radius:7px; transition:0.2s; flex-shrink:0; margin-left:auto; }
+        .sidebar-toggle:hover { color:#fff; background:rgba(255,255,255,0.07); }
+
+        .hamburger { display: flex; }
+        @media (max-width:992px) {
+            .sidebar { transform:translateX(-100%); width:240px !important; }
+            .sidebar.open { transform:translateX(0); }
+            .main, .topbar { margin-left:0 !important; left:0 !important; }
+        }
+        @media (max-width:768px) { .main { padding:16px; } }
+
+        /* Profile hero */
+        .profile-hero {
+            background: linear-gradient(135deg, #0d2a1a 0%, var(--card) 60%);
+            border: 1px solid var(--border); border-radius: 20px;
+            padding: 36px 36px 28px; margin-bottom: 24px;
+            display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+            position: relative; overflow: hidden;
+        }
+        .profile-hero::before {
+            content:''; position:absolute; top:-60px; right:-60px;
+            width:200px; height:200px; border-radius:50%;
+            background: var(--green); opacity:0.04;
+        }
+
+        .big-avatar {
+            width: 90px; height: 90px; border-radius: 22px;
+            background: linear-gradient(135deg, var(--green), var(--green2));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.6rem; font-weight: 900; color: #fff;
+            box-shadow: 0 8px 24px rgba(45,181,93,0.3); flex-shrink: 0;
+        }
+        .profile-name { font-size: 1.6rem; font-weight: 800; color: #fff; }
+        .profile-sub  { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+        .profile-tags { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .profile-tag  { background: rgba(45,181,93,0.1); color: var(--green); border: 1px solid rgba(45,181,93,0.2); border-radius: 8px; padding: 4px 14px; font-size: 0.74rem; font-weight: 700; }
+
+        /* Info card */
+        .info-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+        .info-card-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+        .info-card-title i { color: var(--green); }
+        .info-row { display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+        .info-row:last-child { border-bottom: none; }
+        .info-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+        .info-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+        .info-value { font-size: 0.9rem; font-weight: 600; color: #fff; }
+
+        /* Stats */
+        .stat-mini { background: var(--card2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+        .stat-mini-val { font-size: 1.6rem; font-weight: 900; }
+        .stat-mini-lbl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 4px; }
+
+        /* Danger zone */
+        .danger-zone { background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.15); border-radius: 16px; padding: 22px; }
+        .danger-zone h6 { color: var(--red); margin-bottom: 12px; font-weight: 700; }
+        .btn-logout { background: var(--red); color: #fff; border: none; border-radius: 10px; padding: 11px 28px; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: opacity 0.2s; }
+        .btn-logout:hover { opacity: 0.85; }
+
+        /* Token display */
+        .token-display { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-family: monospace; font-size: 0.75rem; color: #4a4a6a; word-break: break-all; margin-top: 8px; }
+
+        /* Animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
+        .hamburger { display: flex; }
+        @media (max-width:992px) {
+            .sidebar { transform:translateX(-100%); width:240px !important; }
+            .sidebar.open { transform:translateX(0); }
+            .main, .topbar { margin-left:0 !important; left:0 !important; }
+        }
+        @media (max-width:768px) { .main { padding:16px; } }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:299;" onclick="toggleSidebar()"></div>
+
+<!-- ══ SIDEBAR ══ -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="brand">ELM<span>S</span></div>
+        <div class="brand-sub">Learning Management System</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label" onclick="toggleNavSection(this)">Main <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/dashboard" class="nav-link-item"><i class="fas fa-chart-pie"></i> Dashboard</a>
+        <a href="/web/admin/courses"   class="nav-link-item"><i class="fas fa-book-open"></i> Courses</a>
+        <a href="/web/admin/students"  class="nav-link-item"><i class="fas fa-user-graduate"></i> Students</a>
+        <div class="nav-section-label" onclick="toggleNavSection(this)">Academics <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/attendance" class="nav-link-item"><i class="fas fa-calendar-check"></i> Attendance</a>
+        <a href="/web/admin/analytics" class="nav-link-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+        <div class="nav-section-label" onclick="toggleNavSection(this)">System <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/profile" class="nav-link-item active"><i class="fas fa-user-shield"></i> Profile</a>
+        <a href="/web/admin/settings" class="nav-link-item"><i class="fas fa-cog"></i> Settings</a>
+        <a href="#" class="nav-link-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="admin-mini-card">
+            <div class="admin-avatar-sm" id="sidebarAvatar">A</div>
+            <div><div class="admin-name-sm" id="sidebarName">Admin</div><div class="admin-role-sm">Administrator</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ TOPBAR ══ -->
+<div class="topbar" id="topbar">
+    <button class="icon-btn hamburger me-2" onclick="smartToggleSidebar()" title="Toggle Sidebar"><i class="fas fa-bars" style="color:#fff;font-size:1rem;"></i></button>
+    <div class="topbar-title">Profile <span>/ Admin Account</span></div>
+    <div class="icon-btn"><i class="fas fa-bell" style="color:#f59e0b;font-size:1rem;"></i><div class="notif-dot"></div></div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="main" id="mainArea">
+    <div class="row g-4">
+
+        <!-- Left column -->
+        <div class="col-lg-8">
+
+            <!-- Hero card -->
+            <div class="profile-hero">
+                <div class="big-avatar" id="bigAvatar">A</div>
+                <div>
+                    <div class="profile-name" id="profileName">Administrator</div>
+                    <div class="profile-sub">System Administrator · ELMS Platform</div>
+                    <div class="profile-tags">
+                        <span class="profile-tag"><i class="fas fa-shield-alt me-1"></i>ADMIN</span>
+                        <span class="profile-tag"><i class="fas fa-circle me-1" style="font-size:0.5rem;color:var(--green);"></i>Active Session</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account details -->
+            <div class="info-card">
+                <div class="info-card-title"><i class="fas fa-id-card"></i> Account Information</div>
+
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(45,181,93,0.1); color:var(--green);"><i class="fas fa-user"></i></div>
+                    <div><div class="info-label">Full Name</div><div class="info-value" id="infoName">—</div></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(59,130,246,0.1); color:var(--blue);"><i class="fas fa-envelope"></i></div>
+                    <div><div class="info-label">Email Address</div><div class="info-value" id="infoEmail">—</div></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(139,92,246,0.1); color:var(--purple);"><i class="fas fa-shield-alt"></i></div>
+                    <div><div class="info-label">Role</div><div class="info-value" id="infoRole">—</div></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(245,158,11,0.1); color:var(--orange);"><i class="fas fa-clock"></i></div>
+                    <div>
+                        <div class="info-label">Session Token</div>
+                        <div class="token-display" id="infoToken">—</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right column -->
+        <div class="col-lg-4">
+
+            <!-- System stats -->
+            <div class="info-card mb-3">
+                <div class="info-card-title"><i class="fas fa-chart-bar"></i> System Overview</div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="stat-mini">
+                            <div class="stat-mini-val text-success" id="sCourses">–</div>
+                            <div class="stat-mini-lbl">Courses</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-mini">
+                            <div class="stat-mini-val" style="color:var(--blue);" id="sStudents">–</div>
+                            <div class="stat-mini-lbl">Students</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-mini">
+                            <div class="stat-mini-val" style="color:var(--orange);" th:text="${totalAssignments != null ? totalAssignments : 0}">0</div>
+                            <div class="stat-mini-lbl">Assignments</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-mini">
+                            <div class="stat-mini-val" style="color:var(--cyan);" th:text="${attendancePercentage != null ? attendancePercentage : 0} + '%'"></div>
+                            <div class="stat-mini-lbl">Attendance</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick links -->
+            <div class="info-card mb-3">
+                <div class="info-card-title"><i class="fas fa-link"></i> Quick Links</div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <a href="/web/admin/dashboard" style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--card2); border-radius:10px; text-decoration:none; color:var(--muted); font-size:0.84rem; font-weight:500; transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">
+                        <i class="fas fa-chart-pie" style="color:var(--green); width:16px;"></i> Dashboard
+                    </a>
+                    <a href="/web/admin/courses" style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--card2); border-radius:10px; text-decoration:none; color:var(--muted); font-size:0.84rem; font-weight:500; transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">
+                        <i class="fas fa-book-open" style="color:var(--blue); width:16px;"></i> Manage Courses
+                    </a>
+                    <a href="/web/admin/students" style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--card2); border-radius:10px; text-decoration:none; color:var(--muted); font-size:0.84rem; font-weight:500; transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">
+                        <i class="fas fa-users" style="color:var(--purple); width:16px;"></i> Manage Students
+                    </a>
+                </div>
+            </div>
+
+            <!-- Danger zone -->
+            <div class="danger-zone">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Session</h6>
+                <p style="color:var(--muted); font-size:0.82rem; margin-bottom:14px;">Logging out will clear your session and return you to the login page.</p>
+                <button class="btn-logout w-100" onclick="logout()">
+                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    // Apply theme from settings
+    (function applyTheme() {
+        const theme = localStorage.getItem('uiTheme') || 'DARK';
+        const accent = localStorage.getItem('accentColor') || '#2db55d';
+        const r = document.documentElement;
+        r.style.setProperty('--green', accent);
+        r.style.setProperty('--green2', accent);
+        if (theme === 'LIGHT') {
+            r.style.setProperty('--bg', '#f8fafc');
+            r.style.setProperty('--sidebar', '#ffffff');
+            r.style.setProperty('--card', '#ffffff');
+            r.style.setProperty('--card2', '#f1f5f9');
+            r.style.setProperty('--text', '#0f172a');
+            r.style.setProperty('--muted', '#64748b');
+            r.style.setProperty('--border', '#dbeafe');
+        } else if (theme === 'AMOLED') {
+            r.style.setProperty('--bg', '#000');
+            r.style.setProperty('--sidebar', '#000');
+            r.style.setProperty('--card', '#0b0b10');
+            r.style.setProperty('--card2', '#111117');
+            r.style.setProperty('--text', '#f8fafc');
+            r.style.setProperty('--muted', '#94a3b8');
+            r.style.setProperty('--border', '#1f2937');
+        }
+    })();
+
+    const token = localStorage.getItem('token');
+    const roleRaw  = localStorage.getItem('role') || '';
+    const role = roleRaw.toUpperCase().replace('ROLE_', '').trim();
+    const name  = localStorage.getItem('name')  || 'Admin';
+    const email = localStorage.getItem('email') || '—';
+
+    if (!token || role !== 'ADMIN') window.location.href = '/login';
+
+    const initial = name.charAt(0).toUpperCase();
+    document.getElementById('sidebarName').textContent   = name;
+    document.getElementById('sidebarAvatar').textContent = initial;
+    document.getElementById('bigAvatar').textContent     = initial;
+    document.getElementById('profileName').textContent   = name;
+    document.getElementById('infoName').textContent      = name;
+    document.getElementById('infoEmail').textContent     = email;
+    document.getElementById('infoRole').textContent      = role || 'ADMIN';
+    document.getElementById('infoToken').textContent     = token ? token.substring(0, 60) + '…' : '—';
+
+    const prefCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (prefCollapsed && !window.matchMedia('(max-width: 992px)').matches) {
+        document.body.classList.add('sidebar-collapsed');
+    }
+
+    /* Stats from Thymeleaf */
+    document.getElementById('sCourses').textContent  = /*[[${courses  != null ? courses.size()  : 0}]]*/ '–';
+    document.getElementById('sStudents').textContent = /*[[${students != null ? students.size() : 0}]]*/ '–';
+
+    function smartToggleSidebar() {
+        if (window.innerWidth <= 992) { toggleSidebar(); } else { collapseSidebar(); }
+    }
+    function collapseSidebar() {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+        document.getElementById('topbar').classList.toggle('sb-collapsed');
+        document.getElementById('mainArea').classList.toggle('sb-collapsed');
+    }
+    function toggleSidebar() {
+        const isMobile = window.matchMedia('(max-width: 992px)').matches;
+        const ov = document.getElementById('sidebarOverlay');
+        if (isMobile) {
+            document.getElementById('sidebar').classList.toggle('open');
+            ov.style.display = ov.style.display === 'none' ? 'block' : 'none';
+            return;
+        }
+        document.body.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('sidebarCollapsed', document.body.classList.contains('sidebar-collapsed'));
+    }
+
+    function toggleNavSection(labelEl) {
+        const icon = labelEl.querySelector('i');
+        const collapse = !labelEl.classList.contains('collapsed');
+        labelEl.classList.toggle('collapsed', collapse);
+        if (icon) icon.style.transform = collapse ? 'rotate(-90deg)' : 'rotate(0deg)';
+
+        let next = labelEl.nextElementSibling;
+        while (next && !next.classList.contains('nav-section-label')) {
+            next.style.display = collapse ? 'none' : 'flex';
+            next = next.nextElementSibling;
+        }
+    }
+
+    window.addEventListener('resize', () => {
+        if (window.matchMedia('(max-width: 992px)').matches) {
+            document.body.classList.remove('sidebar-collapsed');
+        }
+    });
+
+    function logout() { localStorage.clear(); window.location.href = '/login'; }
+</script>
+</body>
+</html>

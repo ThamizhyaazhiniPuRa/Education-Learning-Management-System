@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>ELMS | Register</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root{
+            --dark-bg:#282828; --card-bg:#1f1f1f; --input-bg:#2a2a2a;
+            --accent:#2db55d; --text:#ffffff; --muted:#c8d0da; --border:#444;
+        }
+        body{
+            margin:0; min-height:100vh; background:var(--dark-bg); color:var(--text);
+            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+        }
+        .wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+        .card-auth{
+            width:100%; max-width:560px; background:var(--card-bg); border:1px solid #3a3a3a;
+            border-radius:16px; padding:30px; box-shadow:0 10px 35px rgba(0,0,0,.35);
+        }
+        .brand{color:#fff; text-decoration:none; font-weight:700; font-size:1.4rem;}
+        .label{color:var(--muted); font-size:.86rem; font-weight:600; margin-bottom:6px; display:block;}
+        .form-control{
+            background:var(--input-bg); border:1px solid var(--border); color:#fff;
+        }
+        .form-control::placeholder{color:#a9b1bb; opacity:1;}
+        .form-control:focus{
+            background:var(--input-bg); color:#fff; border-color:var(--accent); box-shadow:none;
+        }
+        .btn-main{
+            background:var(--accent); color:#fff; border:none; border-radius:25px; padding:12px 20px; font-weight:600;
+        }
+        .btn-main:hover{background:#269e50; color:#fff;}
+        .hint{color:#9fb0bf; font-size:.82rem;}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="card-auth">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a class="brand" href="/"><i class="fas fa-graduation-cap me-2 text-warning"></i>ELMS</a>
+            <a href="/login" class="text-decoration-none" style="color:var(--accent);font-weight:600;">Sign In</a>
+        </div>
+
+        <h3 class="mb-3">Create Student Account</h3>
+        <div id="msg"></div>
+
+        <form id="regForm">
+            <div class="mb-3">
+                <label class="label" for="name">Full Name</label>
+                <input id="name" class="form-control" name="name" placeholder="John Doe" required minlength="3" maxlength="80">
+            </div>
+
+            <div class="mb-3">
+                <label class="label" for="email">Email Address</label>
+                <input id="email" class="form-control" name="email" type="email" placeholder="name@example.com" required maxlength="120">
+            </div>
+
+            <div class="mb-3">
+                <label class="label" for="password">Password</label>
+                <input id="password" class="form-control" name="password" type="password"
+                       placeholder="Enter Password"
+                       required minlength="8" maxlength="64">
+                <div class="hint mt-1">Example: Abcd@123</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="label" for="phone">Phone Number</label>
+                <input id="phone" class="form-control" name="phone" placeholder="10-digit phone"
+                       pattern="[0-9]{10}" required maxlength="10">
+            </div>
+
+            <div class="mb-4">
+                <label class="label" for="program">Program</label>
+                <input id="program" class="form-control" name="program" placeholder="e.g., Computer Science"
+                       required minlength="2" maxlength="100">
+            </div>
+
+            <button class="btn btn-main w-100" type="submit">Register <i class="fas fa-chevron-right ms-2 small"></i></button>
+        </form>
+    </div>
+</div>
+
+<script>
+regForm.onsubmit = async (e) => {
+  e.preventDefault();
+  const payload = {
+    name: regForm.name.value.trim(),
+    email: regForm.email.value.trim(),
+    password: regForm.password.value,
+    phone: regForm.phone.value.trim(),
+    program: regForm.program.value.trim()
+  };
+
+  const res = await fetch('/api/auth/register', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+
+  if(res.ok){
+    msg.innerHTML = '<div class="alert alert-success">Registered successfully. Please sign in.</div>';
+    setTimeout(() => location.href = '/login', 1200);
+  } else {
+    let text = 'Registration failed.';
+    try{
+      const err = await res.json();
+      if (err.message) text = err.message;
+      else if (typeof err === 'object') text = Object.values(err)[0];
+    }catch(_){}
+    msg.innerHTML = `<div class="alert alert-danger">${text}</div>`;
+  }
+}
+</script>
+</body>
+</html>

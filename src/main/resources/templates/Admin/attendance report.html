@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>ELMS – Attendance Report</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root { --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26; --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6; --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+
+        .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:300; transition:transform 0.3s; }
+        .sidebar-header { padding:24px 20px 20px; border-bottom:1px solid var(--border); }
+        .brand { font-size:1.4rem; font-weight:900; color:#fff; } .brand span { color:var(--green); }
+        .brand-sub { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+        .nav-section-label { color:#4a4a6a; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; padding:12px 8px 6px; margin-top:8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+        .nav-section-label i { font-size:0.62rem; transition:transform 0.2s ease; }
+        .nav-link-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:0.86rem; font-weight:500; transition:all 0.2s; margin-bottom:2px; position:relative; }
+        .nav-link-item i { width:18px; text-align:center; font-size:0.9rem; flex-shrink:0; }
+        .nav-link-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-link-item.active { color:#fff; background:linear-gradient(135deg,rgba(45,181,93,0.2),rgba(45,181,93,0.05)); }
+        .nav-link-item.active i { color:var(--green); }
+        .nav-link-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--green); border-radius:0 3px 3px 0; }
+        .nav-link-item.logout { color:#ef4444; } .nav-link-item.logout:hover { background:rgba(239,68,68,0.1); }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .admin-mini-card { background:var(--card); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .admin-avatar { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--green),var(--green2)); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem; color:#fff; flex-shrink:0; }
+        .admin-name { font-weight:600; font-size:0.82rem; color:#fff; } .admin-role { font-size:0.7rem; color:var(--muted); }
+
+        .topbar { position:fixed; top:0; left:240px; right:0; height:64px; background:rgba(15,15,19,0.95); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200; }
+        .topbar-title { font-weight:700; font-size:1.1rem; flex:1; }
+        .topbar-title span { color:var(--muted); font-weight:400; font-size:0.82rem; margin-left:8px; }
+        .icon-btn { width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--muted); transition:0.2s; position:relative; }
+        .icon-btn:hover { color:#fff; border-color:#444; }
+        .notif-dot { position:absolute; top:7px; right:7px; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid var(--bg); }
+
+        .main { margin-left:240px; margin-top:64px; padding:28px; }
+        .chart-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px; margin-bottom:20px; }
+        .stat-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; text-align:center; }
+        .stat-value { font-size:2rem; font-weight:900; margin:6px 0; }
+        .stat-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; font-weight:700; }
+        .att-table { width:100%; border-collapse:collapse; }
+        .att-table thead th { padding:10px 16px; font-size:0.7rem; font-weight:700; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); }
+        .att-table tbody td { padding:12px 16px; font-size:0.84rem; border-bottom:1px solid var(--border); }
+        .pill-present { background:rgba(45,181,93,0.15); color:var(--green); border-radius:20px; padding:3px 12px; font-size:0.7rem; font-weight:700; }
+        .pill-absent { background:rgba(239,68,68,0.15); color:var(--red); border-radius:20px; padding:3px 12px; font-size:0.7rem; font-weight:700; }
+        .export-btn { background:linear-gradient(135deg,var(--green),var(--green2)); color:#fff; border:none; border-radius:10px; padding:10px 20px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+        .hamburger { display:none; }
+        @media (max-width:992px) {
+            .sidebar { transform:translateX(-100%); }
+            .sidebar.open { transform:translateX(0); }
+            .main, .topbar { margin-left:0; left:0; }
+            .hamburger { display:flex; }
+        }
+        @media (max-width:768px) { .main { padding:16px; } }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:299;" onclick="toggleSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="brand">ELM<span>S</span></div>
+        <div class="brand-sub">Learning Management System</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label" onclick="toggleNavSection(this)">Main <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/dashboard" class="nav-link-item"><i class="fas fa-chart-pie"></i> Dashboard</a>
+        <a href="/web/admin/courses" class="nav-link-item"><i class="fas fa-book-open"></i> Courses</a>
+        <a href="/web/admin/students" class="nav-link-item"><i class="fas fa-user-graduate"></i> Students</a>
+        <div class="nav-section-label" onclick="toggleNavSection(this)">Academics <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/attendance" class="nav-link-item active"><i class="fas fa-calendar-check"></i> Attendance</a>
+        <a href="/web/admin/analytics" class="nav-link-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+        <div class="nav-section-label" onclick="toggleNavSection(this)">System <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/profile" class="nav-link-item"><i class="fas fa-user-shield"></i> Profile</a>
+        <a href="/web/admin/settings" class="nav-link-item"><i class="fas fa-cog"></i> Settings</a>
+        <a href="#" class="nav-link-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="admin-mini-card">
+            <div class="admin-avatar" id="sidebarAvatar">A</div>
+            <div><div class="admin-name" id="sidebarName">Admin</div><div class="admin-role">Administrator</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="topbar">
+    <button class="icon-btn hamburger me-2" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+    <div class="topbar-title">Attendance <span>/ Report</span></div>
+    <div class="icon-btn" title="Notifications"><i class="fas fa-bell"></i><div class="notif-dot"></div></div>
+    <div class="icon-btn" title="Profile" onclick="window.location='/web/admin/profile'"><i class="fas fa-user-shield"></i></div>
+</div>
+
+<div class="main">
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Total Records</div><div class="stat-value" style="color:var(--cyan);" id="totalRecords">–</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Present</div><div class="stat-value" style="color:var(--green);" id="totalPresent">–</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Absent</div><div class="stat-value" style="color:var(--red);" id="totalAbsent">–</div></div></div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">Overall %</div><div class="stat-value" style="color:var(--blue);" id="overallPct">–</div></div></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-12">
+            <div class="chart-card">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-list me-2 text-primary"></i>All Attendance Records</h6>
+                    <div class="d-flex gap-2">
+                        <select id="filterCourse" onchange="filterTable()" style="background:var(--card2);border:1px solid var(--border);color:#fff;border-radius:8px;padding:6px 12px;font-size:0.8rem;">
+                            <option value="">All Courses</option>
+                        </select>
+                        <button class="export-btn" onclick="exportAttendance()"><i class="fas fa-download"></i> Export CSV</button>
+                    </div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="att-table">
+                        <thead><tr><th>#</th><th>Student</th><th>Course</th><th>Date</th><th>Status</th></tr></thead>
+                        <tbody id="attBody"><tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted);">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar me-2 text-success"></i>Attendance by Course</h6>
+                <canvas id="courseChart"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-user-check me-2 text-cyan"></i>Top 5 Students by Presence</h6>
+                <canvas id="studentPresenceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Apply theme from settings
+    (function applyTheme() {
+        const theme = localStorage.getItem('uiTheme') || 'DARK';
+        const accent = localStorage.getItem('accentColor') || '#2db55d';
+        const r = document.documentElement;
+        r.style.setProperty('--green', accent);
+        r.style.setProperty('--green2', accent);
+        if (theme === 'LIGHT') {
+            r.style.setProperty('--bg', '#f8fafc');
+            r.style.setProperty('--sidebar', '#ffffff');
+            r.style.setProperty('--card', '#ffffff');
+            r.style.setProperty('--card2', '#f1f5f9');
+            r.style.setProperty('--text', '#0f172a');
+            r.style.setProperty('--muted', '#64748b');
+            r.style.setProperty('--border', '#dbeafe');
+        } else if (theme === 'AMOLED') {
+            r.style.setProperty('--bg', '#000');
+            r.style.setProperty('--sidebar', '#000');
+            r.style.setProperty('--card', '#0b0b10');
+            r.style.setProperty('--card2', '#111117');
+            r.style.setProperty('--text', '#f8fafc');
+            r.style.setProperty('--muted', '#94a3b8');
+            r.style.setProperty('--border', '#1f2937');
+        }
+    })();
+
+    const token = localStorage.getItem('token');
+    const roleRaw = localStorage.getItem('role') || '';
+    const role = roleRaw.toUpperCase().replace('ROLE_', '').trim();
+    const name = localStorage.getItem('name') || 'Admin';
+
+    if (!token || role !== 'ADMIN') window.location.href = '/login';
+
+    document.getElementById('sidebarName').textContent = name;
+    document.getElementById('sidebarAvatar').textContent = name.charAt(0).toUpperCase();
+
+    const AUTH = { 'Authorization': 'Bearer ' + token };
+    let allRecords = [];
+    let courseChart, studentPresenceChart;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const res = await fetch('/api/students/all', { headers: AUTH });
+            const students = res.ok ? await res.json() : [];
+            if (!students.length) {
+                renderStats();
+                renderTable([]);
+                renderStudentSummary([]);
+                return;
+            }
+            for (const s of students) {
+                const aRes = await fetch(`/api/attendance/student/${s.studentId}`, { headers: AUTH });
+                if (aRes.ok) {
+                    const records = await aRes.json();
+                    records.forEach(r => {
+                        allRecords.push({ studentName: s.name, courseName: r.course?.title || 'Unknown', courseId: r.course?.courseId || 0, date: r.date, status: r.status });
+                    });
+                }
+            }
+            renderStats();
+            renderTable(allRecords);
+            populateFilter();
+            renderCourseChart(allRecords);
+            renderStudentSummary(allRecords);
+            renderStudentPresenceChart(allRecords);
+        } catch(e) {
+            document.getElementById('attBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--red);">Failed to load.</td></tr>';
+        }
+    });
+
+    function renderStats() {
+        const total = allRecords.length, present = allRecords.filter(r => r.status === 'PRESENT').length;
+        document.getElementById('totalRecords').textContent = total;
+        document.getElementById('totalPresent').textContent = present;
+        document.getElementById('totalAbsent').textContent = total - present;
+        document.getElementById('overallPct').textContent = (total ? Math.round((present/total)*100) : 0) + '%';
+    }
+
+    function renderTable(records) {
+        const tbody = document.getElementById('attBody');
+        if (!records.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted);">No records.</td></tr>'; return; }
+        tbody.innerHTML = records.map((r, i) => {
+            const d = r.date ? new Date(r.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '–';
+            const pill = r.status === 'PRESENT' ? '<span class="pill-present">Present</span>' : '<span class="pill-absent">Absent</span>';
+            return `<tr><td style="color:var(--muted);">${i+1}</td><td style="font-weight:600;">${r.studentName}</td><td>${r.courseName}</td><td style="color:var(--muted);">${d}</td><td>${pill}</td></tr>`;
+        }).join('');
+    }
+
+    function populateFilter() {
+        const sel = document.getElementById('filterCourse'), seen = new Set();
+        allRecords.forEach(r => { if (!seen.has(r.courseId)) { seen.add(r.courseId); const o = document.createElement('option'); o.value = r.courseId; o.textContent = r.courseName; sel.appendChild(o); } });
+    }
+
+    function renderCourseChart(records) {
+        const byCourse = {};
+        records.forEach(r => {
+            const key = r.courseName || 'Unknown';
+            if (!byCourse[key]) byCourse[key] = { present: 0, total: 0 };
+            byCourse[key].total += 1;
+            if (r.status === 'PRESENT') byCourse[key].present += 1;
+        });
+        const labels = Object.keys(byCourse);
+        const data = labels.map(k => byCourse[k].total ? Math.round((byCourse[k].present / byCourse[k].total) * 100) : 0);
+        if (!courseChart) {
+            courseChart = new Chart(document.getElementById('courseChart'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Attendance %', data, backgroundColor: 'rgba(45,181,93,0.7)', borderRadius: 6 }] },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#6b7280' } }, y: { ticks: { color: '#6b7280' }, min: 0, max: 100 } } }
+            });
+        } else {
+            courseChart.data.labels = labels;
+            courseChart.data.datasets[0].data = data;
+            courseChart.update();
+        }
+    }
+
+    function renderStudentSummary(records) {
+        const tbody = document.getElementById('studentSummaryBody');
+        if (!tbody) return; // Added safety check in case element isn't in DOM
+        if (!records.length) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted);">No data.</td></tr>';
+            return;
+        }
+        const byStudent = {};
+        records.forEach(r => {
+            const key = r.studentName || 'Student';
+            if (!byStudent[key]) byStudent[key] = { present: 0, total: 0 };
+            byStudent[key].total += 1;
+            if (r.status === 'PRESENT') byStudent[key].present += 1;
+        });
+        const rows = Object.keys(byStudent).map(name => {
+            const s = byStudent[name];
+            const absent = s.total - s.present;
+            const pct = s.total ? Math.round((s.present / s.total) * 100) : 0;
+            return `<tr><td style="font-weight:600;">${name}</td><td>${s.present}</td><td>${absent}</td><td>${pct}%</td></tr>`;
+        });
+        tbody.innerHTML = rows.join('');
+    }
+
+    function exportAttendance() {
+        if (!allRecords.length) { alert('No attendance data to export.'); return; }
+        // Notice the extra space: '[ [' prevents Thymeleaf processing exception
+        const rows = [ ['Student','Course','Date','Status'] ];
+        allRecords.forEach(r => rows.push([r.studentName, r.courseName, r.date || '', r.status || '']));
+        const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `attendance_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function toggleSidebar() {
+        const isMobile = window.matchMedia('(max-width: 992px)').matches;
+        const ov = document.getElementById('sidebarOverlay');
+        if (isMobile) {
+            document.getElementById('sidebar').classList.toggle('open');
+            ov.style.display = ov.style.display === 'none' ? 'block' : 'none';
+            return;
+        }
+        document.body.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('sidebarCollapsed', document.body.classList.contains('sidebar-collapsed'));
+    }
+
+    function toggleNavSection(labelEl) {
+        const icon = labelEl.querySelector('i');
+        const collapse = !labelEl.classList.contains('collapsed');
+        labelEl.classList.toggle('collapsed', collapse);
+        if (icon) icon.style.transform = collapse ? 'rotate(-90deg)' : 'rotate(0deg)';
+
+        let next = labelEl.nextElementSibling;
+        while (next && !next.classList.contains('nav-section-label')) {
+            next.style.display = collapse ? 'none' : 'flex';
+            next = next.nextElementSibling;
+        }
+    }
+
+    function logout() { localStorage.clear(); window.location.href = '/login'; }
+
+    function renderStudentPresenceChart(records) {
+        const byStudent = {};
+        records.forEach(r => {
+            const key = r.studentName || 'Student';
+            if (!byStudent[key]) byStudent[key] = { present: 0 };
+            if (r.status === 'PRESENT') byStudent[key].present += 1;
+        });
+
+        const sortedStudents = Object.entries(byStudent)
+            .sort(([,a],[,b]) => b.present - a.present)
+            .slice(0, 5);
+
+        const labels = sortedStudents.map(([name]) => name);
+        const data = sortedStudents.map(([,{present}]) => present);
+
+        if (!studentPresenceChart) {
+            studentPresenceChart = new Chart(document.getElementById('studentPresenceChart'), {
+                type: 'bar',
+                data: { 
+                    labels, 
+                    datasets: [{ 
+                        label: 'Days Present', 
+                        data, 
+                        backgroundColor: 'rgba(6, 182, 212, 0.7)', 
+                        borderRadius: 6 
+                    }] 
+                },
+                options: { 
+                    indexAxis: 'y',
+                    responsive: true, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { 
+                        x: { ticks: { color: '#6b7280' }, beginAtZero: true }, 
+                        y: { ticks: { color: '#6b7280' } } 
+                    } 
+                }
+            });
+        } else {
+            studentPresenceChart.data.labels = labels;
+            studentPresenceChart.data.datasets[0].data = data;
+            studentPresenceChart.update();
+        }
+    }
+
+    function filterTable() {
+        const val = document.getElementById('filterCourse').value;
+        const filtered = !val ? allRecords : allRecords.filter(r => String(r.courseId) === val);
+        renderTable(filtered);
+        renderCourseChart(filtered);
+        renderStudentSummary(filtered);
+        renderStudentPresenceChart(filtered);
+    }
+</script>
+</body>
+</html>

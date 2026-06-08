@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>ELMS – My Courses</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root { --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26; --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6; --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+        /* ── Sidebar ── */
+        .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:300; transition:width 0.3s,transform 0.3s; }
+        .sidebar.collapsed { width:64px; }
+        .sidebar.collapsed .brand-sub,.sidebar.collapsed .nav-label-text,.sidebar.collapsed .nav-section-label,.sidebar.collapsed .stu-name,.sidebar.collapsed .stu-role { display:none; }
+        .sidebar.collapsed .nav-item { justify-content:center; padding:11px 0; }
+        .sidebar.collapsed .nav-item i { width:auto; margin:0; }
+        .sidebar.collapsed .stu-card { justify-content:center; padding:10px; }
+        .sidebar-header { padding:18px 14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+        .sidebar-toggle { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:5px 7px; border-radius:7px; transition:0.2s; flex-shrink:0; margin-left:auto; }
+        .sidebar-toggle:hover { color:#fff; background:rgba(255,255,255,0.07); }
+        .brand { font-size:1.4rem; font-weight:900; color:#fff; } .brand span { color:var(--green); }
+        .brand-sub { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+        .nav-section-label { color:#4a4a6a; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; padding:12px 8px 5px; margin-top:8px; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:0.86rem; font-weight:500; transition:all 0.2s; margin-bottom:2px; position:relative; cursor:pointer; border:none; background:transparent; width:100%; }
+        .nav-item i { width:18px; text-align:center; font-size:0.9rem; flex-shrink:0; }
+        .nav-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-item.active { color:#fff; background:linear-gradient(135deg,rgba(45,181,93,0.2),rgba(45,181,93,0.04)); }
+        .nav-item.active i { color:var(--green); }
+        .nav-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--green); border-radius:0 3px 3px 0; }
+        .nav-item.logout { color:var(--red); } .nav-item.logout:hover { background:rgba(239,68,68,0.08); }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .stu-card { background:var(--card); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .stu-avatar { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--blue),#1d4ed8); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; flex-shrink:0; }
+        .stu-name { font-weight:600; font-size:0.82rem; color:#fff; } .stu-role { font-size:0.7rem; color:var(--muted); }
+        .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:299; }
+        /* ── Topbar ── */
+        .topbar { position:fixed; top:0; left:240px; right:0; height:64px; background:rgba(15,15,19,0.97); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200; transition:left 0.3s; }
+        .topbar.sb-collapsed { left:64px; }
+        .topbar-title { font-weight:700; font-size:1.1rem; flex:1; }
+        .topbar-title span { color:var(--muted); font-weight:400; font-size:0.82rem; margin-left:8px; }
+        .icon-btn { width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; transition:0.2s; text-decoration:none; position:relative; }
+        .icon-btn:hover { border-color:#888; background:rgba(255,255,255,0.12); }
+        .sidebar.collapsed .nav-item i { color:#fff !important; font-size:0.95rem; }
+        .notif-dot { position:absolute; top:7px; right:7px; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid var(--bg); }
+        .search-bar { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:8px 14px; display:flex; align-items:center; gap:8px; width:240px; }
+        .search-bar input { background:transparent; border:none; outline:none; color:#fff; font-size:0.82rem; width:100%; }
+        .search-bar input::placeholder { color:#4a4a6a; }
+        /* ── Dropdowns ── */
+        .notif-dropdown { position:absolute; top:50px; right:0; width:300px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .notif-dropdown.show { display:block; }
+        .notif-header { padding:14px 18px; border-bottom:1px solid var(--border); font-weight:700; font-size:0.86rem; display:flex; justify-content:space-between; align-items:center; }
+        .notif-item { padding:12px 18px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px; }
+        .notif-item:last-child { border-bottom:none; }
+        .notif-icon { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:0.8rem; flex-shrink:0; }
+        .notif-text { font-size:0.78rem; color:var(--text); line-height:1.5; }
+        .notif-time { font-size:0.7rem; color:var(--muted); margin-top:2px; }
+        .profile-dropdown { position:absolute; top:50px; right:0; width:220px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .profile-dropdown.show { display:block; }
+        .profile-dropdown-header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+        .profile-menu-item { display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--muted); font-size:0.83rem; font-weight:500; text-decoration:none; cursor:pointer; transition:0.18s; background:none; border:none; width:100%; text-align:left; }
+        .profile-menu-item i { width:16px; text-align:center; }
+        .profile-menu-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .profile-menu-item.danger { color:var(--red); }
+        .profile-menu-item.danger:hover { background:rgba(239,68,68,0.08); }
+        .profile-sep { border:none; border-top:1px solid var(--border); margin:4px 0; }
+        /* ── Main ── */
+        .main { margin-left:240px; margin-top:64px; padding:28px; transition:margin-left 0.3s; }
+        .main.sb-collapsed { margin-left:64px; }
+        /* ...existing page-specific styles... */
+        .filter-bar { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:22px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+        .filter-input { background:var(--card2); border:1px solid var(--border); border-radius:9px; padding:9px 14px; color:#fff; font-size:0.84rem; outline:none; flex:1; min-width:180px; }
+        .filter-input::placeholder { color:#4a4a6a; }
+        .counter-pill { background:rgba(45,181,93,0.1); color:var(--green); border-radius:8px; padding:4px 12px; font-size:0.78rem; font-weight:700; }
+        .tab-btn { background:var(--card); border:1px solid var(--border); color:var(--muted); border-radius:9px; padding:7px 18px; font-weight:700; font-size:0.82rem; cursor:pointer; transition:0.2s; }
+        .tab-active { background:linear-gradient(135deg,var(--green),var(--green2)); color:#fff; border-color:transparent; }
+        .course-card { background:var(--card); border:1px solid var(--border); border-radius:18px; height:100%; display:flex; flex-direction:column; transition:all 0.25s; cursor:pointer; position:relative; overflow:hidden; }
+        .course-card:hover { border-color:var(--green); transform:translateY(-5px); box-shadow:0 16px 40px rgba(45,181,93,0.12); }
+        /* Banner image top-half */
+        .course-banner { width:100%; height:110px; position:relative; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+        .course-banner-bg { position:absolute; inset:0; background-size:cover; background-position:center; filter:brightness(1.05) saturate(1.4) contrast(1.05); transition:transform 0.4s; }
+        .course-card:hover .course-banner-bg { transform:scale(1.06); }
+        .course-banner-overlay { position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(15,15,19,0.55) 100%); }
+        .course-banner-icon { position:relative; z-index:1; font-size:1.8rem; opacity:1; text-shadow:0 2px 10px rgba(0,0,0,0.5); }
+        .course-banner-badges { position:absolute; top:7px; left:8px; right:8px; z-index:2; display:flex; justify-content:space-between; align-items:flex-start; }
+        /* Card body */
+        .course-body { padding:11px 13px; flex:1; display:flex; flex-direction:column; }
+        .cid-badge { background:rgba(45,181,93,0.12); color:var(--green); border-radius:6px; padding:2px 7px; font-size:0.66rem; font-weight:800; display:inline-block; }
+        .status-active { background:rgba(45,181,93,0.18); color:var(--green); border-radius:20px; padding:2px 8px; font-size:0.62rem; font-weight:700; }
+        .status-inactive { background:rgba(156,163,175,0.15); color:var(--muted); border-radius:20px; padding:2px 8px; font-size:0.62rem; font-weight:700; }
+        .course-title-txt { font-size:0.88rem; font-weight:800; margin:7px 0 4px; color:#fff; line-height:1.3; }
+        .course-desc-txt { font-size:0.74rem; color:var(--muted); line-height:1.5; flex:1; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .course-meta-row { display:flex; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); flex-wrap:wrap; }
+        .meta-it { display:flex; align-items:center; gap:4px; font-size:0.68rem; color:var(--muted); }
+        .meta-it i { color:var(--green); font-size:0.64rem; }
+        .btn-enroll { background:linear-gradient(135deg,var(--green),var(--green2)); color:#fff; border:none; border-radius:7px; padding:7px; font-size:0.76rem; font-weight:700; width:100%; margin-top:8px; cursor:pointer; transition:opacity 0.2s; }
+        .btn-enroll:hover { opacity:0.85; }
+        .btn-enrolled { background:rgba(45,181,93,0.1); color:var(--green); border:1px solid rgba(45,181,93,0.3); border-radius:7px; padding:6px; font-size:0.74rem; font-weight:700; width:100%; margin-top:8px; cursor:default; }
+        .btn-view { background:linear-gradient(135deg,var(--blue),#1d4ed8); color:#fff; border:none; border-radius:7px; padding:5px 9px; font-size:0.7rem; font-weight:700; cursor:pointer; transition:opacity 0.2s; flex:1; }
+        .btn-view:hover { opacity:0.85; }
+        .btn-cert-locked { background:rgba(156,163,175,0.08); color:var(--muted); border:1px dashed var(--border); border-radius:7px; padding:7px; font-size:0.72rem; font-weight:700; width:100%; margin-top:6px; cursor:not-allowed; }
+        .btn-cert-unlocked { background:linear-gradient(135deg,#f59e0b,#b45309); color:#fff; border:none; border-radius:7px; padding:7px; font-size:0.74rem; font-weight:700; width:100%; margin-top:6px; cursor:pointer; transition:opacity 0.2s; }
+        .btn-cert-unlocked:hover { opacity:0.85; }
+        .btn-msg { background:linear-gradient(135deg,#06b6d4,#0891b2); color:#fff; border:none; border-radius:7px; padding:5px 9px; font-size:0.7rem; font-weight:700; cursor:pointer; transition:opacity 0.2s; flex:1; }
+        .btn-msg:hover { opacity:0.85; }
+        .card-action-row { display:flex; gap:6px; margin-top:8px; }
+
+        /* ── Messaging Modal ── */
+        .msg-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; align-items:flex-start; justify-content:center; padding:32px 16px; overflow-y:auto; }
+        .msg-overlay.show { display:flex; }
+        .msg-box { background:var(--card); border:1px solid var(--border); border-radius:20px; width:100%; max-width:680px; display:flex; flex-direction:column; position:relative; animation:msgSlide 0.25s ease; max-height:90vh; }
+        @keyframes msgSlide { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+        .msg-header { padding:18px 22px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+        .msg-close { background:none; border:none; color:var(--muted); font-size:1.1rem; cursor:pointer; padding:4px 8px; border-radius:7px; transition:0.2s; }
+        .msg-close:hover { color:#fff; background:rgba(255,255,255,0.08); }
+        .msg-tabs { display:flex; gap:6px; padding:12px 18px; border-bottom:1px solid var(--border); flex-shrink:0; }
+        .msg-tab { background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:6px 16px; font-size:0.78rem; font-weight:700; cursor:pointer; transition:0.2s; }
+        .msg-tab.active { background:rgba(6,182,212,0.15); color:#06b6d4; border-color:rgba(6,182,212,0.4); }
+        .msg-thread-list { flex:1; overflow-y:auto; padding:14px 18px; min-height:120px; }
+        .msg-thread-item { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; cursor:pointer; transition:border-color 0.2s; }
+        .msg-thread-item:hover { border-color:#3b82f6; }
+        .msg-thread-item.unread { border-color:rgba(6,182,212,0.4); }
+        .msg-thread-item .th-meta { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+        .msg-type-badge { font-size:0.64rem; font-weight:700; padding:2px 8px; border-radius:6px; text-transform:uppercase; }
+        .msg-bubble-wrap { flex:1; overflow-y:auto; padding:14px 18px; display:flex; flex-direction:column; gap:10px; min-height:200px; max-height:340px; }
+        .msg-bubble { max-width:80%; padding:10px 14px; border-radius:14px; font-size:0.84rem; line-height:1.55; }
+        .msg-bubble.student { background:rgba(59,130,246,0.18); color:#fff; border-radius:14px 14px 4px 14px; align-self:flex-end; }
+        .msg-bubble.instructor { background:rgba(45,181,93,0.15); color:#fff; border-radius:14px 14px 14px 4px; align-self:flex-start; }
+        .msg-bubble-time { font-size:0.65rem; color:var(--muted); margin-top:3px; }
+        .msg-compose { padding:14px 18px 18px; border-top:1px solid var(--border); flex-shrink:0; }
+        .msg-type-select { width:100%; background:var(--card2); border:1px solid var(--border); border-radius:9px; padding:8px 12px; color:var(--muted); font-size:0.82rem; margin-bottom:10px; outline:none; }
+        .msg-textarea { width:100%; background:var(--card2); border:1px solid var(--border); border-radius:9px; padding:10px 14px; color:#fff; font-size:0.84rem; resize:vertical; min-height:80px; outline:none; font-family:inherit; }
+        .msg-textarea::placeholder { color:#4a4a6a; }
+        .msg-send-btn { background:linear-gradient(135deg,#06b6d4,#0891b2); color:#fff; border:none; border-radius:9px; padding:10px 22px; font-size:0.84rem; font-weight:700; cursor:pointer; transition:opacity 0.2s; width:100%; margin-top:8px; }
+        .msg-send-btn:hover { opacity:0.88; }
+        .msg-back-btn { background:none; border:none; color:var(--muted); font-size:0.8rem; cursor:pointer; padding:0; margin-bottom:10px; }
+        .msg-back-btn:hover { color:#fff; }
+        .msg-empty { text-align:center; padding:40px 20px; color:var(--muted); }
+        .msg-empty i { font-size:2rem; display:block; margin-bottom:10px; color:#2a2a3a; }
+        .flash { padding:10px 16px; border-radius:9px; margin-bottom:14px; font-size:0.84rem; font-weight:600; }
+        .flash.s { background:rgba(45,181,93,0.15); color:var(--green); border:1px solid rgba(45,181,93,0.3); }
+        .flash.e { background:rgba(239,68,68,0.15); color:var(--red); border:1px solid rgba(239,68,68,0.3); }
+        .state-box { background:var(--card); border:1px dashed var(--border); border-radius:14px; padding:50px 20px; text-align:center; color:var(--muted); }
+        .state-box i { font-size:2.2rem; color:#2a2a3a; display:block; margin-bottom:14px; }
+        .hamburger { display:flex; }
+        @media (max-width:992px) { .sidebar { transform:translateX(-100%); width:240px !important; } .sidebar.open { transform:translateX(0); } .sidebar-overlay.show { display:block; } .main,.topbar { margin-left:0 !important; left:0 !important; } }
+        @media (max-width:768px) { .main { padding:16px; } .search-bar { display:none; } }
+    </style>
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div><div class="brand">ELM<span>S</span></div><div class="brand-sub">Learning Management</div></div>
+        <button class="sidebar-toggle" onclick="collapseSidebar()" title="Collapse"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a href="/student/dashboard"  class="nav-item"><i class="fas fa-chart-pie"></i><span class="nav-label-text"> Dashboard</span></a>
+        <a href="/student/courses"    class="nav-item active"><i class="fas fa-book-open"></i><span class="nav-label-text"> My Courses</span></a>
+        <div class="nav-section-label">Academics</div>
+        <a href="/student/attendance" class="nav-item"><i class="fas fa-calendar-check"></i><span class="nav-label-text"> Attendance</span></a>
+        <a href="/student/grades"     class="nav-item"><i class="fas fa-star"></i><span class="nav-label-text"> Grades</span></a>
+        <a href="/student/analytics"  class="nav-item"><i class="fas fa-chart-bar"></i><span class="nav-label-text"> My Analytics</span></a>
+        <div class="nav-section-label">Account</div>
+        <a href="/student/profile"    class="nav-item"><i class="fas fa-user-circle"></i><span class="nav-label-text"> Profile</span></a>
+        <button class="nav-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span class="nav-label-text"> Logout</span></button>
+    </nav>
+    <div class="sidebar-footer"><div class="stu-card"><div class="stu-avatar" id="sidebarAvatar">S</div><div><div class="stu-name" id="sidebarName">Student</div><div class="stu-role">Student</div></div></div></div>
+</div>
+
+<div class="topbar" id="topbar">
+    <button class="icon-btn hamburger me-2" onclick="smartToggleSidebar()" title="Toggle Sidebar"><i class="fas fa-bars" style="color:#fff;font-size:1rem;"></i></button>
+    <div class="topbar-title">My Courses <span>/ Browse &amp; Enroll</span></div>
+    <div class="search-bar"><i class="fas fa-search"></i><input id="topSearch" placeholder="Search courses…" oninput="filterCards(this.value)"></div>
+    <!-- Notification -->
+    <div style="position:relative;">
+        <div class="icon-btn" id="notifBtn" onclick="toggleNotif(event)" title="Notifications">
+            <i class="fas fa-bell" style="color:#f59e0b;font-size:1rem;"></i><div class="notif-dot" id="notifDot" style="display:none;"></div>
+        </div>
+        <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header">
+                <span><i class="fas fa-bell me-2" style="color:var(--orange);"></i>Notifications</span>
+                <button onclick="clearCoursesNotif(event)" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;padding:0;">Mark read</button>
+            </div>
+            <div id="notifBody" style="max-height:320px;overflow-y:auto;">
+                <div class="notif-item" style="justify-content:center;color:var(--muted);font-size:0.8rem;padding:24px;">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Loading…
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Profile -->
+    <div style="position:relative;">
+        <div class="icon-btn" onclick="toggleProfileMenu(event)" title="Profile"><i class="fas fa-user-circle" style="color:#2db55d;font-size:1rem;"></i></div>
+        <div class="profile-dropdown" id="profileDropdown">
+            <div class="profile-dropdown-header">
+                <div class="stu-avatar" id="profileMenuAvatar" style="width:32px;height:32px;font-size:0.85rem;">S</div>
+                <div><div style="font-weight:700;font-size:0.83rem;color:#fff;" id="profileMenuName">Student</div><div style="font-size:0.7rem;color:var(--green);">Student Account</div></div>
+            </div>
+            <a href="/student/profile"    class="profile-menu-item"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="/student/grades"     class="profile-menu-item"><i class="fas fa-star"></i> My Grades</a>
+            <a href="/student/attendance" class="profile-menu-item"><i class="fas fa-calendar-check"></i> Attendance</a>
+            <a href="/student/courses"    class="profile-menu-item"><i class="fas fa-book-open"></i> My Courses</a>
+            <hr class="profile-sep">
+            <button class="profile-menu-item danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+        </div>
+    </div>
+</div>
+
+<div class="main" id="mainContent">
+    <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+        <h4 class="fw-bold mb-0">Courses</h4>
+        <div style="display:flex;gap:8px;margin-left:auto;">
+            <button id="tabAll"      class="tab-btn tab-active" onclick="switchTab('all')">All Courses</button>
+            <button id="tabEnrolled" class="tab-btn"            onclick="switchTab('enrolled')">My Enrolled</button>
+        </div>
+    </div>
+    <div class="filter-bar mb-4">
+        <i class="fas fa-search" style="color:var(--muted);"></i>
+        <input class="filter-input" id="courseSearch" placeholder="Search by title, semester…" oninput="filterCards(this.value)">
+        <span class="counter-pill" id="courseCount">0 Courses</span>
+    </div>
+    <div id="flashMsg"></div>
+    <div class="row g-3" id="coursesGrid"><div class="col-12"><div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading courses…</div></div></div>
+</div>
+
+<script>
+    const token     = localStorage.getItem('token');
+    const role      = localStorage.getItem('role');
+    const stuName   = localStorage.getItem('name') || 'Student';
+    const studentId = parseInt(localStorage.getItem('studentId') || '0');
+    if (!token || role !== 'STUDENT') window.location.href = '/login';
+    const AUTH = { 'Authorization':'Bearer '+token };
+    function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    /* ── Sidebar/Nav helpers ── */
+    function smartToggleSidebar(){ if(window.innerWidth<=992){toggleSidebar();}else{collapseSidebar();} }
+    function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('show'); }
+    function collapseSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('topbar').classList.toggle('sb-collapsed'); document.getElementById('mainContent').classList.toggle('sb-collapsed'); }
+
+    let coursesNotifViewed = false;
+    function toggleNotif(e){
+        e.stopPropagation();
+        document.getElementById('profileDropdown').classList.remove('show');
+        const dd = document.getElementById('notifDropdown');
+        dd.classList.toggle('show');
+        if (dd.classList.contains('show')) {
+            coursesNotifViewed = true;
+            document.getElementById('notifDot').style.display = 'none';
+        }
+    }
+    function clearCoursesNotif(e) {
+        e.stopPropagation();
+        coursesNotifViewed = true;
+        document.getElementById('notifDot').style.display = 'none';
+        document.getElementById('notifBody').innerHTML = `<div class="notif-item" style="justify-content:center;color:var(--muted);font-size:0.8rem;padding:24px;"><i class="fas fa-check-circle me-2" style="color:var(--green);"></i>No new notifications</div>`;
+    }
+    function toggleProfileMenu(e){ e.stopPropagation(); document.getElementById('notifDropdown').classList.remove('show'); document.getElementById('profileDropdown').classList.toggle('show'); }
+    document.addEventListener('click', function(){ document.getElementById('notifDropdown').classList.remove('show'); document.getElementById('profileDropdown').classList.remove('show'); });
+    function logout(){ localStorage.clear(); window.location.href='/login'; }
+
+    async function apiFetch(url){ try{ const r=await fetch(url,{headers:AUTH}); return r.ok?await r.json():null; }catch(_){return null;} }
+    function showFlash(type, msg){ const el=document.getElementById('flashMsg'); el.innerHTML=`<div class="flash ${type}"><i class="fas fa-${type==='s'?'check':'exclamation'}-circle me-1"></i>${msg}</div>`; setTimeout(()=>el.innerHTML='',3500); }
+
+    let allCourses  = [];
+    let enrolledIds = new Set();
+    let activeTab   = 'all';
+    let certCache   = {}; // courseId → certificate status
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const init = stuName.charAt(0).toUpperCase();
+        document.getElementById('sidebarAvatar').textContent    = init;
+        document.getElementById('sidebarName').textContent      = stuName;
+        document.getElementById('profileMenuAvatar').textContent = init;
+        document.getElementById('profileMenuName').textContent   = stuName;
+
+        const urlQ = new URLSearchParams(window.location.search).get('q');
+        allCourses = await apiFetch('/api/students/courses/all') || [];
+        const enrolled = await apiFetch(`/api/students/${studentId}/courses`) || [];
+        enrolled.forEach(c => enrolledIds.add(c.courseId));
+
+        // Fetch instructor names
+        const instructorList = await apiFetch('/api/instructor/all') || [];
+        instructorList.forEach(i => { instructorMap[i.instructorId] = i.name; });
+
+        // Pre-fetch certificate status for enrolled courses
+        await Promise.all([...enrolledIds].map(async cid => {
+            const cs = await apiFetch(`/api/assignments/course/${cid}/certificate/${studentId}`);
+            if (cs) certCache[cid] = cs;
+        }));
+
+        // Load pending assignment notifications
+        const subs = await apiFetch(`/api/students/${studentId}/submissions`) || [];
+        let assigns = [];
+        for (const cid of enrolledIds) {
+            const list = await apiFetch(`/api/assignments/course/${cid}`);
+            if (list) assigns = assigns.concat(list);
+        }
+        const nowN = new Date();
+        const pending = assigns.filter(a => new Date(a.dueDate) >= nowN && !subs.find(s => (s.assignment?.assignmentId ?? s.assignmentId) === a.assignmentId))
+            .sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate)).slice(0, 10);
+        const notifBody = document.getElementById('notifBody');
+        if (!pending.length) {
+            notifBody.innerHTML = `<div class="notif-item" style="justify-content:center;color:var(--muted);font-size:0.8rem;padding:24px;"><i class="fas fa-check-circle me-2" style="color:var(--green);"></i>No pending assignments</div>`;
+        } else {
+            document.getElementById('notifDot').style.display = 'block';
+            notifBody.innerHTML = pending.map(a => {
+                const due = new Date(a.dueDate);
+                const days = Math.ceil((due - nowN) / 86400000);
+                const daysLabel = days === 0 ? 'Due today!' : days === 1 ? 'Due tomorrow' : `Due in ${days} days`;
+                const color = days <= 1 ? 'var(--red)' : days <= 3 ? 'var(--orange)' : 'var(--blue)';
+                return `<div class="notif-item">
+                    <div class="notif-icon" style="background:rgba(245,158,11,0.15);color:var(--orange);"><i class="fas fa-file-alt"></i></div>
+                    <div><div class="notif-text">${esc(a.title||'Assignment')} — pending submission</div>
+                    <div class="notif-time" style="color:${color};font-weight:700;"><i class="fas fa-clock me-1"></i>${daysLabel}</div></div>
+                </div>`;
+            }).join('');
+        }
+
+        renderGrid();
+        if (urlQ) { document.getElementById('courseSearch').value = urlQ; filterCards(urlQ); }
+    });
+
+    let instructorMap = {}; // instructorId → name (populated on load)
+
+    function renderGrid() {
+        const source   = activeTab === 'all' ? allCourses : allCourses.filter(c => enrolledIds.has(c.courseId));
+        const q        = (document.getElementById('courseSearch').value||'').toLowerCase();
+        const filtered = source.filter(c => !q || (c.title||'').toLowerCase().includes(q));
+        document.getElementById('courseCount').textContent = filtered.length + ' Course' + (filtered.length!==1?'s':'');
+        if (!filtered.length) {
+            document.getElementById('coursesGrid').innerHTML = `<div class="col-12"><div class="state-box"><i class="fas fa-book-open"></i>${activeTab==='enrolled'?'No enrolled courses yet.':'No courses found.'}</div></div>`;
+            return;
+        }
+        document.getElementById('coursesGrid').innerHTML = filtered.map(c => {
+            const isEnrolled = enrolledIds.has(c.courseId);
+            const statusPill = c.status==='ACTIVE' ? `<span class="status-active">ACTIVE</span>` : `<span class="status-inactive">${c.status||'INACTIVE'}</span>`;
+
+            // Pick a banner gradient and icon per course (rotate through palettes)
+            const palettes = [
+                { grad:'linear-gradient(135deg,#1e3a5f,#3b82f6)', icon:'fa-book-open', iconCol:'#93c5fd' },
+                { grad:'linear-gradient(135deg,#1a3a2a,#2db55d)', icon:'fa-laptop-code', iconCol:'#6ee7b7' },
+                { grad:'linear-gradient(135deg,#3b1f6e,#8b5cf6)', icon:'fa-graduation-cap', iconCol:'#c4b5fd' },
+                { grad:'linear-gradient(135deg,#6b2100,#f59e0b)', icon:'fa-flask', iconCol:'#fcd34d' },
+                { grad:'linear-gradient(135deg,#1e3a5f,#06b6d4)', icon:'fa-atom', iconCol:'#67e8f9' },
+                { grad:'linear-gradient(135deg,#4a1942,#ec4899)', icon:'fa-paint-brush', iconCol:'#f9a8d4' },
+            ];
+            const pal = palettes[c.courseId % palettes.length];
+
+            // Certificate logic for enrolled courses
+            let certHtml = '';
+            if (isEnrolled) {
+                const cert = certCache[c.courseId];
+                if (cert) {
+                    const locked = cert.locked !== false;
+                    const grade  = cert.grade || 'N/A';
+                    const passed = cert.passed || 0;
+                    const total  = cert.total || 0;
+                    if (!locked) {
+                        certHtml = `
+                        <button class="btn-cert-unlocked" onclick="event.stopPropagation();showCertificate(${c.courseId},'${esc(c.title)}','${grade}',${cert.avgScore||0})">
+                            <i class="fas fa-certificate me-1"></i>Certificate — Grade: ${grade}
+                        </button>`;
+                    } else if (total > 0) {
+                        certHtml = `
+                        <div class="btn-cert-locked" title="Complete all quizzes to unlock certificate">
+                            <i class="fas fa-lock me-1"></i>Certificate locked (${passed}/${total} quizzes passed)
+                        </div>`;
+                    }
+                }
+            }
+
+            const actions = isEnrolled
+                ? `<button class="btn-enrolled"><i class="fas fa-check-circle me-1"></i>Enrolled</button>
+                   <div class="card-action-row">
+                     <button class="btn-view" onclick="event.stopPropagation();location.href='/student/courses/content?courseId=${c.courseId}&title=${encodeURIComponent(c.title)}'"><i class="fas fa-eye me-1"></i>View Content</button>
+                     <button class="btn-msg" onclick="event.stopPropagation();openMsgModal(${c.courseId},'${esc(c.title)}',${c.instructorId||'null'})"><i class="fas fa-comment-dots me-1"></i>Message Instructor</button>
+                   </div>`
+                : `<button class="btn-enroll" onclick="event.stopPropagation();enrollCourse(${c.courseId})"><i class="fas fa-plus-circle me-1"></i>Enroll Now</button>`;
+            const cardClick = isEnrolled
+                ? `onclick="location.href='/student/courses/content?courseId=${c.courseId}&title=${encodeURIComponent(c.title)}'"`
+                : `onclick="showFlash('e','Please enroll in this course first to access its content.')"`;
+            return `
+            <div class="col-xl-3 col-lg-4 col-md-6" data-title="${esc(c.title).toLowerCase()}">
+                <div class="course-card" ${cardClick}>
+                    <!-- Banner top half -->
+                    <div class="course-banner">
+						<div class="course-banner-bg" style="background-image:url('https://cloudmonte.com/wp-content/uploads/2025/01/Modules-of-Dynamics-365-In-Education-Industry-1.png');"></div>
+                        <div class="course-banner-overlay"></div>
+                        <div class="course-banner-badges">
+                            <span class="cid-badge" style="background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);">#${c.courseId}</span>
+                            ${statusPill}
+                        </div>
+                        <i class="fas ${pal.icon} course-banner-icon" style="color:${pal.iconCol};"></i>
+                    </div>
+                    <!-- Card body -->
+                    <div class="course-body">
+                        <div class="course-title-txt">${esc(c.title)}</div>
+                        <div class="course-desc-txt">${esc(c.description||'No description available.')}</div>
+                        <div class="course-meta-row">
+                            <div class="meta-it"><i class="fas fa-calendar-alt"></i><span>${c.semester||'N/A'}</span></div>
+                            <div class="meta-it"><i class="fas fa-star"></i><span>${c.credits||0} Credits</span></div>
+                            ${c.instructorId ? `<div class="meta-it"><i class="fas fa-chalkboard-teacher"></i><span>${esc(instructorMap[c.instructorId] || 'Instructor #'+c.instructorId)}</span></div>` : ''}
+                        </div>
+                        ${actions}
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function filterCards(q) {
+        document.getElementById('topSearch').value    = q;
+        document.getElementById('courseSearch').value = q;
+        renderGrid();
+    }
+
+    function switchTab(tab) {
+        activeTab = tab;
+        document.getElementById('tabAll').className      = 'tab-btn' + (tab==='all'?' tab-active':'');
+        document.getElementById('tabEnrolled').className = 'tab-btn' + (tab==='enrolled'?' tab-active':'');
+        renderGrid();
+    }
+
+    async function enrollCourse(courseId) {
+        try {
+            const res = await fetch(`/api/students/${studentId}/enroll/${courseId}`, { method:'POST', headers:AUTH });
+            if (!res.ok) throw new Error(await res.text());
+            enrolledIds.add(courseId);
+            // Fetch certificate status for newly enrolled course
+            const cs = await apiFetch(`/api/assignments/course/${courseId}/certificate/${studentId}`);
+            if (cs) certCache[courseId] = cs;
+            showFlash('s','Enrolled successfully! Course is now ACTIVE.');
+            renderGrid();
+        } catch(e) { showFlash('e','Enrollment failed: '+e.message); }
+    }
+
+    function showCertificate(courseId, courseTitle, grade, avgScore) {
+        // Grade color mapping
+        const gradeColors = {
+            'A+':'#2db55d', 'A':'#2db55d', 'B+':'#06b6d4', 'B':'#3b82f6',
+            'C':'#f59e0b', 'F':'#ef4444', 'N/A':'#9ca3af'
+        };
+        const col = gradeColors[grade] || '#9ca3af';
+        const today = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        modal.innerHTML = `
+        <div style="background:#16161d;border:1px solid #2a2a3a;border-radius:20px;padding:40px;max-width:520px;width:100%;text-align:center;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+            <button onclick="this.closest('[style]').remove()" style="position:absolute;top:16px;right:16px;background:rgba(239,68,68,0.1);color:#ef4444;border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:1rem;">✕</button>
+            <div style="font-size:3rem;margin-bottom:8px;">🏆</div>
+            <div style="font-size:0.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:4px;">Certificate of Completion</div>
+            <div style="font-size:0.75rem;color:#9ca3af;margin-bottom:20px;">ELMS Learning Management System</div>
+            <div style="background:linear-gradient(135deg,rgba(45,181,93,0.08),rgba(45,181,93,0.03));border:1px solid rgba(45,181,93,0.2);border-radius:14px;padding:24px;margin-bottom:20px;">
+                <div style="font-size:0.78rem;color:#9ca3af;margin-bottom:6px;">This certifies that</div>
+                <div style="font-size:1.4rem;font-weight:900;color:#fff;margin-bottom:6px;">${esc(stuName)}</div>
+                <div style="font-size:0.78rem;color:#9ca3af;margin-bottom:4px;">has successfully completed</div>
+                <div style="font-size:1.1rem;font-weight:700;color:#2db55d;">${esc(courseTitle)}</div>
+            </div>
+            <div style="display:flex;justify-content:center;gap:24px;margin-bottom:20px;">
+                <div style="text-align:center;">
+                    <div style="font-size:2.2rem;font-weight:900;color:${col};">${grade}</div>
+                    <div style="font-size:0.7rem;color:#9ca3af;font-weight:600;">FINAL GRADE</div>
+                </div>
+                <div style="width:1px;background:#2a2a3a;"></div>
+                <div style="text-align:center;">
+                    <div style="font-size:2.2rem;font-weight:900;color:#3b82f6;">${avgScore}%</div>
+                    <div style="font-size:0.7rem;color:#9ca3af;font-weight:600;">AVG SCORE</div>
+                </div>
+            </div>
+            <div style="font-size:0.74rem;color:#9ca3af;margin-bottom:20px;">Issued on ${today}</div>
+            <button onclick="window.print()" style="background:linear-gradient(135deg,#f59e0b,#b45309);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-weight:700;font-size:0.82rem;cursor:pointer;">
+                <i class="fas fa-print me-1"></i>Print Certificate
+            </button>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
+</script>
+
+<!-- ═══ MESSAGING MODAL ═══ -->
+<div class="msg-overlay" id="msgOverlay" onclick="closeMsgOnBackdrop(event)">
+    <div class="msg-box" id="msgBox">
+        <!-- Header -->
+        <div class="msg-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:rgba(6,182,212,0.15);color:#06b6d4;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+                    <i class="fas fa-comment-dots"></i>
+                </div>
+                <div>
+                    <div style="font-weight:700;font-size:0.92rem;color:#fff;" id="msgCourseTitle">Course Messages</div>
+                    <div style="font-size:0.72rem;color:var(--muted);" id="msgInstructorLabel">Instructor</div>
+                </div>
+            </div>
+            <button class="msg-close" onclick="closeMsg()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Tabs: Inbox / New Message -->
+        <div class="msg-tabs">
+            <button class="msg-tab active" id="tabInbox"   onclick="showMsgTab('inbox')"><i class="fas fa-inbox me-1"></i>My Messages</button>
+            <button class="msg-tab"        id="tabNew"     onclick="showMsgTab('new')"><i class="fas fa-plus me-1"></i>New Message</button>
+        </div>
+
+        <!-- INBOX PANEL -->
+        <div id="msgInboxPanel">
+            <div class="msg-thread-list" id="msgThreadList">
+                <div class="msg-empty"><i class="fas fa-spinner fa-spin"></i>Loading…</div>
+            </div>
+        </div>
+
+        <!-- THREAD VIEW PANEL -->
+        <div id="msgThreadPanel" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+            <div style="padding:10px 18px 0;flex-shrink:0;">
+                <button class="msg-back-btn" onclick="backToInbox()"><i class="fas fa-arrow-left me-1"></i>Back to Inbox</button>
+            </div>
+            <div class="msg-bubble-wrap" id="msgBubbleWrap"></div>
+            <div class="msg-compose" id="msgReplyCompose">
+                <textarea class="msg-textarea" id="msgReplyText" placeholder="Type your reply…" rows="3"></textarea>
+                <button class="msg-send-btn" onclick="sendReply()"><i class="fas fa-paper-plane me-1"></i>Send Reply</button>
+            </div>
+        </div>
+
+        <!-- NEW MESSAGE PANEL -->
+        <div id="msgNewPanel" style="display:none;">
+            <div class="msg-compose">
+                <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px;">
+                    <i class="fas fa-info-circle me-1" style="color:#06b6d4;"></i>
+                    Send a message to your instructor regarding this course. They will reply here.
+                </div>
+                <select class="msg-type-select" id="msgTypeSelect">
+                    <option value="GENERAL">💬 General Question</option>
+                    <option value="ATTENDANCE_QUERY">📋 Attendance Issue / Query</option>
+                    <option value="ASSIGNMENT_EXTENSION">⏰ Request Assignment Due Date Extension</option>
+                </select>
+                <textarea class="msg-textarea" id="msgNewText" placeholder="Describe your issue or request in detail…" rows="5"></textarea>
+                <button class="msg-send-btn" onclick="sendNewMessage()"><i class="fas fa-paper-plane me-1"></i>Send Message</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   MESSAGING LOGIC (Student Side)
+══════════════════════════════════════════ */
+let msgCourseId     = null;
+let msgInstructorId = null;
+let msgActiveThread = null;
+
+function openMsgModal(courseId, titleText, instructorId) {
+    msgCourseId     = courseId;
+    msgInstructorId = instructorId;
+    msgActiveThread = null;
+
+    document.getElementById('msgCourseTitle').textContent    = titleText + ' — Messages';
+    document.getElementById('msgInstructorLabel').textContent = instructorId
+        ? 'Instructor #' + instructorId : 'No instructor assigned yet';
+
+    showMsgTab('inbox');
+    document.getElementById('msgOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+    loadThreads();
+}
+
+function closeMsg() {
+    document.getElementById('msgOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+function closeMsgOnBackdrop(e) {
+    if (e.target === document.getElementById('msgOverlay')) closeMsg();
+}
+
+function showMsgTab(tab) {
+    document.getElementById('tabInbox').classList.toggle('active', tab === 'inbox');
+    document.getElementById('tabNew').classList.toggle('active', tab === 'new');
+    document.getElementById('msgInboxPanel').style.display   = tab === 'inbox' ? 'block' : 'none';
+    document.getElementById('msgNewPanel').style.display     = tab === 'new'   ? 'block' : 'none';
+    document.getElementById('msgThreadPanel').style.display  = 'none';
+}
+
+function backToInbox() {
+    msgActiveThread = null;
+    document.getElementById('msgThreadPanel').style.display = 'none';
+    document.getElementById('msgInboxPanel').style.display  = 'block';
+    loadThreads();
+}
+
+const TYPE_LABELS = {
+    GENERAL:              { label:'General',          bg:'rgba(59,130,246,0.15)',   col:'#3b82f6' },
+    ATTENDANCE_QUERY:     { label:'Attendance',       bg:'rgba(245,158,11,0.15)',   col:'#f59e0b' },
+    ASSIGNMENT_EXTENSION: { label:'Extension Req.',   bg:'rgba(139,92,246,0.15)',   col:'#8b5cf6' },
+};
+
+async function loadThreads() {
+    const list = document.getElementById('msgThreadList');
+    list.innerHTML = '<div class="msg-empty"><i class="fas fa-spinner fa-spin"></i>Loading…</div>';
+    try {
+        const res = await fetch(`/api/messages/student/${studentId}/course/${msgCourseId}`, { headers: AUTH });
+        const threads = res.ok ? await res.json() : [];
+        if (!threads.length) {
+            list.innerHTML = `<div class="msg-empty"><i class="fas fa-comment-slash"></i>No messages yet.<br><small>Use "New Message" to contact your instructor.</small></div>`;
+            return;
+        }
+        list.innerHTML = threads.map(t => {
+            const tl = TYPE_LABELS[t.messageType] || TYPE_LABELS.GENERAL;
+            const ago = timeAgo(t.sentAt);
+            const hasUnread = t.hasUnreadReply;
+            return `
+            <div class="msg-thread-item ${hasUnread ? 'unread' : ''}" onclick="openThread(${t.threadId})">
+                <div class="th-meta">
+                    <span class="msg-type-badge" style="background:${tl.bg};color:${tl.col};">${tl.label}</span>
+                    ${hasUnread ? '<span style="background:rgba(6,182,212,0.2);color:#06b6d4;font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:6px;">New Reply</span>' : ''}
+                    <span style="margin-left:auto;font-size:0.68rem;color:var(--muted);">${ago}</span>
+                </div>
+                <div style="font-size:0.84rem;font-weight:600;color:#fff;margin-bottom:4px;">${esc(t.content.substring(0,80))}${t.content.length>80?'…':''}</div>
+                ${t.replyCount > 0 ? `<div style="font-size:0.72rem;color:var(--muted);"><i class="fas fa-reply me-1"></i>${t.replyCount} repl${t.replyCount===1?'y':'ies'}</div>` : '<div style="font-size:0.72rem;color:var(--muted);">No replies yet</div>'}
+            </div>`;
+        }).join('');
+    } catch(e) {
+        list.innerHTML = '<div class="msg-empty"><i class="fas fa-exclamation-circle"></i>Failed to load. Retry later.</div>';
+    }
+}
+
+async function openThread(threadId) {
+    msgActiveThread = threadId;
+    document.getElementById('msgInboxPanel').style.display  = 'none';
+    document.getElementById('msgThreadPanel').style.display = 'flex';
+    document.getElementById('msgNewPanel').style.display    = 'none';
+
+    // Mark as read
+    fetch(`/api/messages/thread/${threadId}/read`, {
+        method:'PUT', headers:{...AUTH,'Content-Type':'application/json'},
+        body: JSON.stringify({ readerRole: 'STUDENT' })
+    }).catch(()=>{});
+
+    await renderThread(threadId);
+}
+
+async function renderThread(threadId) {
+    const wrap = document.getElementById('msgBubbleWrap');
+    wrap.innerHTML = '<div class="msg-empty"><i class="fas fa-spinner fa-spin"></i>Loading…</div>';
+    try {
+        const res  = await fetch(`/api/messages/thread/${threadId}`, { headers: AUTH });
+        const msgs = res.ok ? await res.json() : [];
+        wrap.innerHTML = msgs.map(m => {
+            const mine = m.senderRole === 'STUDENT';
+            const name = mine ? 'You' : (m.instructorName || 'Instructor');
+            return `
+            <div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};">
+                <div style="font-size:0.68rem;color:var(--muted);margin-bottom:3px;">${esc(name)}</div>
+                <div class="msg-bubble ${mine?'student':'instructor'}">${esc(m.content)}</div>
+                <div class="msg-bubble-time">${formatTime(m.sentAt)}</div>
+            </div>`;
+        }).join('');
+        wrap.scrollTop = wrap.scrollHeight;
+    } catch(e) {
+        wrap.innerHTML = '<div class="msg-empty"><i class="fas fa-exclamation-circle"></i>Failed to load.</div>';
+    }
+}
+
+async function sendReply() {
+    const text = document.getElementById('msgReplyText').value.trim();
+    if (!text) return;
+    const btn = document.querySelector('#msgReplyCompose .msg-send-btn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+        const res = await fetch('/api/messages/reply', {
+            method:'POST', headers:{...AUTH,'Content-Type':'application/json'},
+            body: JSON.stringify({ threadId: msgActiveThread, senderRole: 'STUDENT', content: text })
+        });
+        if (res.ok) {
+            document.getElementById('msgReplyText').value = '';
+            await renderThread(msgActiveThread);
+        } else {
+            alert('Failed to send reply.');
+        }
+    } catch(e) { alert('Network error.'); }
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Reply';
+}
+
+async function sendNewMessage() {
+    const text = document.getElementById('msgNewText').value.trim();
+    const type = document.getElementById('msgTypeSelect').value;
+    if (!text) { alert('Please write a message.'); return; }
+    if (!msgInstructorId) { alert('No instructor assigned to this course yet. Cannot send message.'); return; }
+
+    const btn = document.querySelector('#msgNewPanel .msg-send-btn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+        const res = await fetch('/api/messages/send', {
+            method:'POST', headers:{...AUTH,'Content-Type':'application/json'},
+            body: JSON.stringify({ studentId, courseId: msgCourseId, content: text, messageType: type })
+        });
+        if (res.ok) {
+            document.getElementById('msgNewText').value = '';
+            showMsgTab('inbox');
+            await loadThreads();
+            alert('✅ Message sent! Your instructor will reply here.');
+        } else {
+            const d = await res.json();
+            alert('Error: ' + (d.error || 'Failed to send'));
+        }
+    } catch(e) { alert('Network error.'); }
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send Message';
+}
+
+function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1)  return 'Just now';
+    if (m < 60) return m + 'm ago';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + 'h ago';
+    return Math.floor(h / 24) + 'd ago';
+}
+
+function formatTime(dateStr) {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMsg(); });
+</script>
+</body>
+</html>

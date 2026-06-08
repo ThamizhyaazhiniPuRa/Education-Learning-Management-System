@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>ELMS – Assignments</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root { --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26; --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6; --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+        .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:300; transition:transform 0.3s, width 0.3s; }
+        .sidebar.collapsed { width:64px; }
+        .sidebar.collapsed .brand-sub,.sidebar.collapsed .stu-name,.sidebar.collapsed .stu-role { display:none; }
+        .sidebar.collapsed .nav-item { justify-content:center; font-size:0; padding:11px 0; }
+        .sidebar.collapsed .nav-item i { font-size:0.9rem; width:auto; margin:0; }
+        .sidebar.collapsed .stu-card { justify-content:center; padding:10px; }
+        .sidebar-header { padding:18px 14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+        .sidebar-toggle { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:5px 7px; border-radius:7px; transition:0.2s; flex-shrink:0; margin-left:auto; }
+        .sidebar-toggle:hover { color:#fff; }
+        .brand { font-size:1.4rem; font-weight:900; color:#fff; } .brand span { color:var(--green); }
+        .brand-sub { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+        .nav-section-label { color:#4a4a6a; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; padding:12px 8px 5px; margin-top:8px; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:0.86rem; font-weight:500; transition:all 0.2s; margin-bottom:2px; position:relative; cursor:pointer; border:none; background:transparent; width:100%; }
+        .nav-item i { width:18px; text-align:center; font-size:0.9rem; flex-shrink:0; }
+        .nav-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-item.active { color:#fff; background:linear-gradient(135deg,rgba(45,181,93,0.2),rgba(45,181,93,0.04)); }
+        .nav-item.active i { color:var(--green); }
+        .nav-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--green); border-radius:0 3px 3px 0; }
+        .nav-item.logout { color:var(--red); } .nav-item.logout:hover { background:rgba(239,68,68,0.08); }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .stu-card { background:var(--card); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .stu-avatar { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--blue),#1d4ed8); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; flex-shrink:0; }
+        .stu-name { font-weight:600; font-size:0.82rem; color:#fff; } .stu-role { font-size:0.7rem; color:var(--muted); }
+        .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:299; }
+        .topbar { position:fixed; top:0; left:240px; right:0; height:64px; background:rgba(15,15,19,0.97); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200; transition:left 0.3s; }
+        .topbar.sb-collapsed { left:64px; }
+        .icon-btn { width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; transition:0.2s; text-decoration:none; }
+        .icon-btn:hover { border-color:#888; background:rgba(255,255,255,0.12); }
+        .sidebar.collapsed .nav-item i { color:#fff !important; font-size:0.95rem; }
+        .icon-btn i[class*="fa-bell"]   { color:var(--orange) !important; font-size:1rem; }
+        .icon-btn i[class*="fa-user"]   { color:var(--green)  !important; font-size:1rem; }
+        .icon-btn i[class*="fa-shield"] { color:var(--green)  !important; font-size:1rem; }
+        .icon-btn i[class*="fa-bars"]   { color:#fff          !important; font-size:1rem; }
+        .main { margin-left:240px; margin-top:64px; padding:28px; transition:margin-left 0.3s; }
+        .main.sb-collapsed { margin-left:64px; }
+        .filter-bar { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:22px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+        .filter-input { background:var(--card2); border:1px solid var(--border); border-radius:9px; padding:9px 14px; color:#fff; font-size:0.84rem; outline:none; flex:1; min-width:180px; }
+        .filter-input::placeholder { color:#4a4a6a; }
+        .filter-select { background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:9px; padding:9px 14px; font-size:0.84rem; outline:none; cursor:pointer; }
+        .counter-pill { background:rgba(45,181,93,0.1); color:var(--green); border-radius:8px; padding:4px 12px; font-size:0.78rem; font-weight:700; }
+        .assign-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px 22px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; transition:border-color 0.2s; }
+        .assign-card:hover { border-color:rgba(6,182,212,0.3); }
+        .assign-id-lbl { color:var(--cyan); font-weight:800; font-size:0.72rem; margin-bottom:4px; }
+        .assign-title-lbl { font-weight:700; font-size:0.95rem; }
+        .assign-feedback { color:var(--muted); font-size:0.8rem; margin-top:3px; }
+        .badge-pending  { background:#2a1800; color:var(--orange); border-radius:7px; padding:5px 14px; font-size:0.76rem; font-weight:700; }
+        .badge-due      { background:#2a1800; color:var(--orange); border-radius:7px; padding:5px 14px; font-size:0.76rem; font-weight:700; }
+        .badge-max      { background:#001828; color:var(--cyan);   border-radius:7px; padding:5px 14px; font-size:0.76rem; font-weight:700; }
+        .badge-submitted{ background:rgba(45,181,93,0.1); color:var(--green); border:1px solid rgba(45,181,93,0.3); border-radius:7px; padding:5px 14px; font-size:0.76rem; font-weight:700; }
+        .badge-overdue  { background:rgba(239,68,68,0.1);  color:var(--red);   border:1px solid rgba(239,68,68,0.3);   border-radius:7px; padding:5px 14px; font-size:0.76rem; font-weight:700; }
+        .badge-score    { background:#001828; color:var(--cyan); border-radius:7px; padding:5px 14px; font-size:0.76rem; font-weight:700; }
+        .btn-submit-assign { background:linear-gradient(135deg,var(--cyan),var(--blue)); color:#fff; border:none; border-radius:8px; padding:8px 18px; font-size:0.78rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+        .btn-submit-assign:hover { opacity:0.85; }
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+        .modal-overlay.show { display:flex; }
+        .modal-box { background:var(--card); border:1px solid var(--border); border-radius:20px; width:100%; max-width:480px; padding:28px; position:relative; animation:slideUp 0.25s ease; }
+        @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        .modal-close { position:absolute; top:14px; right:16px; background:none; border:none; color:var(--muted); font-size:1.1rem; cursor:pointer; }
+        .modal-close:hover { color:#fff; }
+        .f-label { color:var(--muted); font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; display:block; }
+        .f-input { width:100%; background:var(--card2); border:1px solid var(--border); color:#fff; border-radius:9px; padding:10px 14px; font-size:0.86rem; outline:none; transition:border-color 0.2s; margin-bottom:16px; }
+        .f-input:focus { border-color:var(--cyan); }
+        .f-input::placeholder { color:#3a3a5a; }
+        .btn-modal-submit { background:linear-gradient(135deg,var(--cyan),var(--blue)); color:#fff; border:none; border-radius:9px; padding:11px 24px; font-weight:700; font-size:0.88rem; cursor:pointer; width:100%; }
+        .flash { padding:10px 16px; border-radius:9px; margin-bottom:14px; font-size:0.84rem; font-weight:600; }
+        .flash.s { background:rgba(45,181,93,0.15); color:var(--green); border:1px solid rgba(45,181,93,0.3); }
+        .flash.e { background:rgba(239,68,68,0.15); color:var(--red); border:1px solid rgba(239,68,68,0.3); }
+        .state-box { background:var(--card); border:1px dashed var(--border); border-radius:14px; padding:50px 20px; text-align:center; color:var(--muted); }
+        .state-box i { font-size:2.2rem; color:#2a2a3a; display:block; margin-bottom:14px; }
+        .hamburger { display:flex; }
+        @media (max-width:992px) { .sidebar { transform:translateX(-100%); } .sidebar.open { transform:translateX(0); } .sidebar-overlay.show { display:block; } .main,.topbar { margin-left:0; left:0; } }
+        @media (max-width:768px) { .main { padding:16px; } }
+    </style>
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header"><div><div class="brand">ELM<span>S</span></div><div class="brand-sub">Learning Management System</div></div><button class="sidebar-toggle" onclick="collapseSidebar()" title="Collapse"><i class="fas fa-bars"></i></button></div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a href="/student/dashboard"   class="nav-item"><i class="fas fa-chart-pie"></i> Dashboard</a>
+        <a href="/student/courses"     class="nav-item"><i class="fas fa-book-open"></i> My Courses</a>
+        <div class="nav-section-label">Academics</div>
+        <a href="/student/assignments" class="nav-item active"><i class="fas fa-file-alt"></i> Assignments</a>
+        <a href="/student/attendance"  class="nav-item"><i class="fas fa-calendar-check"></i> Attendance</a>
+        <a href="/student/grades"      class="nav-item"><i class="fas fa-star"></i> Grades</a>
+        <div class="nav-section-label">Account</div>
+        <a href="/student/profile"     class="nav-item"><i class="fas fa-user-circle"></i> Profile</a>
+        <button class="nav-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </nav>
+    <div class="sidebar-footer"><div class="stu-card"><div class="stu-avatar" id="sidebarAvatar">S</div><div><div class="stu-name" id="sidebarName">Student</div><div class="stu-role">Student</div></div></div></div>
+</div>
+<div class="topbar" id="topbar">
+    <button class="icon-btn hamburger me-2" onclick="smartToggleSidebar()" title="Toggle Sidebar"><i class="fas fa-bars" style="color:#fff;font-size:1rem;"></i></button>
+    <div class="topbar-title">Assignments <span>/ Submit &amp; Track</span></div>
+    <a href="/student/profile" class="icon-btn"><i class="fas fa-user-circle"></i></a>
+</div>
+<div class="main" id="mainArea">
+    <h4 class="fw-bold mb-4"><i class="fas fa-file-alt me-2" style="color:var(--cyan);"></i>My Assignments</h4>
+    <div class="filter-bar mb-4">
+        <i class="fas fa-filter" style="color:var(--muted);"></i>
+        <input class="filter-input" id="assignSearch" placeholder="Search assignments…" oninput="renderList()">
+        <select class="filter-select" id="statusFilter" onchange="renderList()">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="submitted">Submitted</option>
+            <option value="overdue">Overdue</option>
+        </select>
+        <span class="counter-pill" id="assignCount">0</span>
+    </div>
+    <div id="flashMsg"></div>
+    <div id="assignList"><div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading…</div></div>
+</div>
+
+<!-- Submit Modal -->
+<div class="modal-overlay" id="submitModal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+        <h5 class="fw-bold mb-1" style="color:#fff;">Submit Assignment</h5>
+        <p style="color:var(--muted); font-size:0.8rem; margin-bottom:20px;" id="modalTitle">–</p>
+        <div id="modalFlash"></div>
+        <label class="f-label">Your Answer / Notes *</label>
+        <textarea class="f-input" id="submitAnswer" rows="4" placeholder="Describe your solution…"></textarea>
+        <label class="f-label">File Link (optional)</label>
+        <input class="f-input" id="submitFile" placeholder="https://drive.google.com/…">
+        <button class="btn-modal-submit" onclick="doSubmit()"><i class="fas fa-paper-plane me-2"></i>Submit</button>
+    </div>
+</div>
+
+<script>
+    const token     = localStorage.getItem('token');
+    const role      = localStorage.getItem('role');
+    const stuName   = localStorage.getItem('name') || 'Student';
+    const studentId = parseInt(localStorage.getItem('studentId') || '0');
+    if (!token || role !== 'STUDENT') window.location.href = '/login';
+    const AUTH      = { 'Authorization':'Bearer '+token };
+    const AUTH_JSON = { 'Authorization':'Bearer '+token, 'Content-Type':'application/json' };
+    function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function smartToggleSidebar(){ if(window.innerWidth<=992){toggleSidebar();}else{collapseSidebar();} }
+    function collapseSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('topbar').classList.toggle('sb-collapsed'); document.getElementById('mainArea').classList.toggle('sb-collapsed'); }
+    function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('show'); }
+    function logout(){ localStorage.clear(); window.location.href='/login'; }
+    async function apiFetch(url){ try{ const r=await fetch(url,{headers:AUTH}); return r.ok?await r.json():null; }catch(_){return null;} }
+    function showFlash(id, type, msg){ const el=document.getElementById(id); el.innerHTML=`<div class="flash ${type}"><i class="fas fa-${type==='s'?'check':'exclamation'}-circle me-1"></i>${msg}</div>`; setTimeout(()=>el.innerHTML='',3500); }
+
+    let allAssignments = [];
+    let mySubmissions  = [];
+    let currentAssignId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        document.getElementById('sidebarAvatar').textContent = stuName.charAt(0).toUpperCase();
+        document.getElementById('sidebarName').textContent   = stuName;
+        await loadData();
+    });
+
+    async function loadData() {
+        const enrolled    = await apiFetch(`/api/students/${studentId}/courses`) || [];
+        const enrolledIds = new Set(enrolled.map(c => c.courseId));
+        let   assigns     = [];
+        for (const cid of enrolledIds) {
+            const list = await apiFetch(`/api/assignments/course/${cid}`) || [];
+            assigns    = assigns.concat(list);
+        }
+        const seen = new Set();
+        allAssignments = assigns.filter(a => { if(seen.has(a.assignmentId)) return false; seen.add(a.assignmentId); return true; });
+        mySubmissions  = await apiFetch(`/api/students/${studentId}/submissions`) || [];
+        renderList();
+    }
+
+    function renderList() {
+        const q      = (document.getElementById('assignSearch').value||'').toLowerCase();
+        const filter = document.getElementById('statusFilter').value;
+        const now    = new Date();
+        let vis = 0, html = '';
+
+        allAssignments.forEach(a => {
+            const sub     = mySubmissions.find(s => s.assignmentId === a.assignmentId);
+            const due     = new Date(a.dueDate);
+            const overdue = !sub && due < now;
+            const status  = sub ? 'submitted' : overdue ? 'overdue' : 'pending';
+            if (filter && filter !== status) return;
+            if (q && !(a.title||'').toLowerCase().includes(q)) return;
+            vis++;
+            const dueFmt      = due.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+            const statusBadge = sub
+                ? `<span class="badge-submitted"><i class="fas fa-check me-1"></i>Submitted</span>`
+                : overdue
+                ? `<span class="badge-overdue"><i class="fas fa-exclamation me-1"></i>Overdue</span>`
+                : `<span class="badge-pending"><i class="fas fa-clock me-1"></i>Pending</span>`;
+            const scoreBadge  = sub?.score != null ? `<span class="badge-score"><i class="fas fa-star me-1"></i>${sub.score}/${a.maxScore}</span>` : '';
+            const submitBtn   = !sub && !overdue ? `<button class="btn-submit-assign" onclick="openModal(${a.assignmentId},'${esc(a.title)}')"><i class="fas fa-upload me-1"></i>Submit</button>` : '';
+            html += `
+            <div class="assign-card">
+                <div>
+                    <div class="assign-id-lbl">Assignment #${a.assignmentId} · Course #${a.courseId}</div>
+                    <div class="assign-title-lbl">${esc(a.title||'Untitled')}</div>
+                    ${sub?.feedback?`<div class="assign-feedback"><i class="fas fa-comment me-1"></i>${esc(sub.feedback)}</div>`:''}
+                </div>
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                    ${statusBadge}
+                    <span class="badge-due"><i class="fas fa-calendar-alt me-1"></i>Due: ${dueFmt}</span>
+                    <span class="badge-max"><i class="fas fa-star me-1"></i>Max: ${a.maxScore??'–'}</span>
+                    ${scoreBadge}
+                    ${submitBtn}
+                </div>
+            </div>`;
+        });
+        document.getElementById('assignCount').textContent = vis + ' Assignment' + (vis!==1?'s':'');
+        document.getElementById('assignList').innerHTML = html || `<div class="state-box"><i class="fas fa-clipboard-list"></i>No assignments match the filter.</div>`;
+    }
+
+    function openModal(id, title) {
+        currentAssignId = id;
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('submitAnswer').value    = '';
+        document.getElementById('submitFile').value      = '';
+        document.getElementById('modalFlash').innerHTML  = '';
+        document.getElementById('submitModal').classList.add('show');
+    }
+    function closeModal() { document.getElementById('submitModal').classList.remove('show'); }
+
+    async function doSubmit() {
+        const answer = document.getElementById('submitAnswer').value.trim();
+        if (!answer) { showFlash('modalFlash','e','Answer is required.'); return; }
+        const payload = { assignmentId:currentAssignId, studentId, answer, fileLink:document.getElementById('submitFile').value.trim() };
+        try {
+            const res = await fetch('/api/assignments/submit', { method:'POST', headers:AUTH_JSON, body:JSON.stringify(payload) });
+            if (!res.ok) throw new Error(await res.text());
+            showFlash('modalFlash','s','Submitted successfully!');
+            const a   = allAssignments.find(x => x.assignmentId === currentAssignId);
+            const now = new Date();
+            if (a && new Date(a.dueDate) < now) await updateStatus('drop');
+            setTimeout(async () => { closeModal(); await loadData(); await checkGraduation(); }, 1200);
+        } catch(e) { showFlash('modalFlash','e','Submission failed: '+e.message); }
+    }
+
+    async function checkGraduation() {
+        const now = new Date();
+        const pending = allAssignments.filter(a =>
+            !mySubmissions.find(s => s.assignmentId===a.assignmentId) && new Date(a.dueDate)>=now
+        );
+        if (pending.length===0 && allAssignments.length>0) await updateStatus('complete');
+    }
+
+    async function updateStatus(action) {
+        await fetch(`/api/students/${studentId}/${action}`, { method:'PUT', headers:AUTH });
+    }
+</script>
+</body>
+</html>

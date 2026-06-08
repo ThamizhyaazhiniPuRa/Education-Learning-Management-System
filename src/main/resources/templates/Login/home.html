@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>ELMS | A New Way to Learn</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root {
+            --dark-bg: #282828;
+            --accent-teal: #2db55d;
+            --text-gray: #eff2f699;
+        }
+        body {
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .navbar { padding: 1rem 10%; background-color: transparent; }
+        .nav-link { color: var(--text-gray) !important; margin: 0 15px; font-size: 0.9rem; }
+        .nav-link:hover { color: white !important; }
+        .hero-section { padding: 100px 10% 0 10%; display: flex; align-items: center; min-height: 80vh; overflow: hidden; }
+        .hero-text { flex: 1; padding-right: 50px; z-index: 2; }
+        .hero-graphic { flex: 1; position: relative; }
+        .hero-title { font-size: 3.5rem; font-weight: 700; margin-bottom: 2rem; }
+        .hero-subtitle { color: var(--text-gray); font-size: 1.1rem; line-height: 1.6; margin-bottom: 2.5rem; max-width: 500px; }
+        .ui-mockup {
+            width: 120%;
+            transform: rotate(-10deg) translateY(50px);
+            box-shadow: -20px 20px 50px rgba(0,0,0,0.5);
+            border-radius: 20px;
+            transition: transform 0.5s ease;
+        }
+        .ui-mockup:hover { transform: rotate(-5deg) translateY(30px); }
+        .btn-create-account {
+            background-color: var(--accent-teal);
+            color: white;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            border: none;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+        .btn-create-account:hover {
+            background-color: #269e50;
+            box-shadow: 0 0 15px rgba(45, 181, 93, 0.4);
+            color: white;
+        }
+        .bottom-accent {
+            position: absolute;
+            bottom: -150px;
+            left: 0;
+            width: 100%;
+            height: 300px;
+            background: white;
+            transform: skewY(-5deg);
+            z-index: 1;
+        }
+        .start-exploring {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #269e50;
+            font-weight: 600;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <a class="navbar-brand text-white fw-bold" href="/">
+            <i class="fas fa-graduation-cap me-2 text-warning"></i> ELMS
+        </a>
+        <div class="collapse navbar-collapse justify-content-end">
+            <div class="navbar-nav">
+                
+                <a class="nav-link text-white" href="/login">Sign in</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<section class="hero-section">
+    <div class="hero-text">
+        <h1 class="hero-title">A New Way to Learn</h1>
+        <p class="hero-subtitle">
+            ELMS is the best platform to help you enhance your skills, expand
+            your knowledge and prepare for technical careers with integrated course
+            tracking and performance analytics.
+        </p>
+        <a href="/register" class="btn-create-account">
+            Create Account <i class="fas fa-chevron-right ms-2 small"></i>
+        </a>
+    </div>
+
+    <div class="hero-graphic">
+        <img src="https://tse1.mm.bing.net/th/id/OIP.rgv0wEXR30kLYOkslkdotQHaE8?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
+             class="ui-mockup" alt="Dashboard Preview">
+    </div>
+</section>
+
+<div class="position-relative" style="height: 200px;">
+    <div class="bottom-accent"></div>
+    <div class="start-exploring">
+        Start Exploring <i class="fas fa-graduation-cap ms-2"></i>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+<footer style="background-color: white; color: #333; padding: 50px 10%; position: relative; z-index: 5; margin-top: -50px;">
+    <div class="row">
+        <div class="col-md-4">
+            <h5 class="fw-bold mb-3"><i class="fas fa-graduation-cap me-2 text-warning"></i> ELMS</h5>
+            <p style="color: #666; font-size: 0.9rem;">
+                Empowering students and instructors with a modern, 
+                integrated platform for learning and technical growth.
+            </p>
+        </div>
+        <div class="col-md-4">
+            <h6 class="fw-bold mb-3">Quick Links</h6>
+            <ul class="list-unstyled">
+                <li><a href="/home" class="text-decoration-none text-secondary">Home</a></li>
+                <li><a href="/login" class="text-decoration-none text-secondary">Sign In</a></li>
+                <li><a href="/register" class="text-decoration-none text-secondary">Register</a></li>
+            </ul>
+        </div>
+        <div class="col-md-4">
+            <h6 class="fw-bold mb-3">Contact</h6>
+            <p style="color: #666; font-size: 0.9rem;">
+                <i class="fas fa-envelope me-2"></i> support@elms-portal.edu<br>
+                <i class="fas fa-phone me-2"></i> +91 98765 43210
+            </p>
+        </div>
+    </div>
+    <hr class="mt-4">
+    <div class="text-center text-secondary small">
+        &copy; 2026 ELMS Learning Management System. All rights reserved.
+    </div>
+</footer>
+</html>

@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>ELMS – Student Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26;
+            --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6;
+            --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --yellow:#fbbf24;
+            --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9;
+        }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+
+        /* Sidebar */
+        .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:300; transition:width 0.3s, transform 0.3s; }
+        .sidebar.collapsed { width:64px; }
+        .sidebar.collapsed .brand-sub,
+        .sidebar.collapsed .nav-label-text,
+        .sidebar.collapsed .nav-section-label,
+        .sidebar.collapsed .stu-name,
+        .sidebar.collapsed .stu-role { display:none; }
+        .sidebar.collapsed .nav-item { justify-content:center; padding:11px 0; }
+        .sidebar.collapsed .nav-item i { width:auto; margin:0; }
+        .sidebar.collapsed .stu-card { justify-content:center; padding:10px; }
+        .sidebar-header { padding:18px 14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+        .sidebar-toggle { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:5px 7px; border-radius:7px; transition:0.2s; flex-shrink:0; margin-left:auto; }
+        .sidebar-toggle:hover { color:#fff; background:rgba(255,255,255,0.07); }
+        .brand { font-size:1.4rem; font-weight:900; color:#fff; }
+        .brand span { color:var(--green); }
+        .brand-sub { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+        .nav-section-label { color:#4a4a6a; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; padding:12px 8px 5px; margin-top:8px; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:0.86rem; font-weight:500; transition:all 0.2s; margin-bottom:2px; position:relative; cursor:pointer; border:none; background:transparent; width:100%; }
+        .nav-item i { width:18px; text-align:center; font-size:0.9rem; flex-shrink:0; }
+        .nav-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-item.active { color:#fff; background:linear-gradient(135deg,rgba(45,181,93,0.2),rgba(45,181,93,0.04)); }
+        .nav-item.active i { color:var(--green); }
+        .nav-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--green); border-radius:0 3px 3px 0; }
+        .nav-item.logout { color:var(--red); }
+        .nav-item.logout:hover { background:rgba(239,68,68,0.08); }
+        .nav-badge { margin-left:auto; background:var(--red); color:#fff; font-size:0.62rem; font-weight:700; padding:2px 7px; border-radius:10px; }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .stu-card { background:var(--card); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .stu-avatar { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--blue),#1d4ed8); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem; color:#fff; flex-shrink:0; }
+        .stu-name { font-weight:600; font-size:0.82rem; color:#fff; }
+        .stu-role { font-size:0.7rem; color:var(--muted); }
+        .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:299; }
+
+        /* Topbar */
+        .topbar { position:fixed; top:0; left:240px; right:0; height:64px; background:rgba(15,15,19,0.97); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200; transition:left 0.3s; }
+        .topbar.sb-collapsed { left:64px; }
+        .topbar-title { font-weight:700; font-size:1.1rem; flex:1; }
+        .topbar-title span { color:var(--muted); font-weight:400; font-size:0.82rem; margin-left:8px; }
+        .icon-btn { width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; transition:0.2s; position:relative; text-decoration:none; }
+        .icon-btn:hover { border-color:#888; background:rgba(255,255,255,0.12); }
+        .sidebar.collapsed .nav-item i { color:#fff !important; font-size:0.95rem; }
+        .notif-dot { position:absolute; top:7px; right:7px; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid var(--bg); }
+        .search-bar { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:8px 14px; display:flex; align-items:center; gap:8px; width:240px; }
+        .search-bar input { background:transparent; border:none; outline:none; color:#fff; font-size:0.82rem; width:100%; }
+        .search-bar input::placeholder { color:#4a4a6a; }
+
+        /* Notification Dropdown */
+        .notif-dropdown { position:absolute; top:50px; right:0; width:300px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .notif-dropdown.show { display:block; }
+        .notif-header { padding:14px 18px; border-bottom:1px solid var(--border); font-weight:700; font-size:0.86rem; display:flex; justify-content:space-between; align-items:center; }
+        .notif-item { padding:12px 18px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px; }
+        .notif-item:last-child { border-bottom:none; }
+        .notif-icon { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:0.8rem; flex-shrink:0; }
+        .notif-text { font-size:0.78rem; color:var(--text); line-height:1.5; }
+        .notif-time { font-size:0.7rem; color:var(--muted); margin-top:2px; }
+
+        /* Profile Dropdown */
+        .profile-dropdown { position:absolute; top:50px; right:0; width:220px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .profile-dropdown.show { display:block; }
+        .profile-dropdown-header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+        .profile-menu-item { display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--muted); font-size:0.83rem; font-weight:500; text-decoration:none; cursor:pointer; transition:0.18s; background:none; border:none; width:100%; text-align:left; }
+        .profile-menu-item i { width:16px; text-align:center; }
+        .profile-menu-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .profile-menu-item.danger { color:var(--red); }
+        .profile-menu-item.danger:hover { background:rgba(239,68,68,0.08); }
+        .profile-sep { border:none; border-top:1px solid var(--border); margin:4px 0; }
+
+        /* Main */
+        .main { margin-left:240px; margin-top:64px; padding:28px; transition:margin-left 0.3s; }
+        .main.sb-collapsed { margin-left:64px; }
+
+        /* Stat cards */
+        .stat-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 18px; transition:transform 0.2s,border-color 0.2s; }
+        .stat-card:hover { transform:translateY(-3px); border-color:#3a3a5a; }
+        .stat-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1rem; margin-bottom:12px; }
+        .stat-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+        .stat-value { font-size:1.8rem; font-weight:900; line-height:1.1; margin:5px 0 3px; }
+        .stat-sub { font-size:0.72rem; color:var(--muted); }
+
+        /* Chart card */
+        .chart-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px; }
+        .chart-card canvas { max-height:220px; }
+
+        /* Upcoming */
+        .upcoming-item { display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--border); }
+        .upcoming-item:last-child { border-bottom:none; }
+
+        /* State box */
+        .state-box { background:var(--card); border:1px dashed var(--border); border-radius:14px; padding:50px 20px; text-align:center; color:var(--muted); }
+        .state-box i { font-size:2.2rem; color:#2a2a3a; display:block; margin-bottom:14px; }
+
+        /* Buttons */
+        .btn-submit-assign { background:linear-gradient(135deg,var(--cyan),var(--blue)); color:#fff; border:none; border-radius:8px; padding:8px 18px; font-size:0.78rem; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
+
+        /* Mini Calendar */
+        .cal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+        .cal-nav { background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.85rem; padding:4px 8px; border-radius:6px; transition:0.2s; }
+        .cal-nav:hover { color:#fff; background:rgba(255,255,255,0.07); }
+        .cal-month-label { font-weight:700; font-size:0.86rem; color:#fff; }
+        .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+        .cal-day-label { text-align:center; font-size:0.62rem; font-weight:700; color:var(--muted); padding:4px 0; text-transform:uppercase; }
+        .cal-cell { text-align:center; font-size:0.72rem; padding:5px 2px; border-radius:6px; cursor:default; position:relative; }
+        .cal-cell.today { background:rgba(45,181,93,0.15); color:var(--green); font-weight:700; }
+        .cal-cell.has-due { background:rgba(245,158,11,0.2); color:var(--orange); font-weight:700; border-radius:50%; cursor:pointer; }
+        .cal-cell.has-due:hover .cal-tooltip { display:block; }
+        .cal-cell.empty { color:transparent; cursor:default; }
+        .cal-cell.other-month { color:#3a3a5a; }
+        .cal-dot { width:4px; height:4px; background:var(--orange); border-radius:50%; margin:1px auto 0; }
+        .cal-tooltip { display:none; position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%); background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:0.7rem; white-space:nowrap; z-index:100; color:var(--text); box-shadow:0 6px 24px rgba(0,0,0,0.4); max-width:180px; white-space:normal; text-align:left; min-width:120px; }
+        .cal-legend { display:flex; gap:12px; margin-top:10px; font-size:0.7rem; color:var(--muted); }
+        .cal-legend span { display:flex; align-items:center; gap:4px; }
+        .cal-legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+        .hamburger { display:flex; }
+
+        /* FAQ Modal */
+        .faq-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; }
+        .faq-overlay.show { display:flex; }
+        .faq-box { background:var(--card); border:1px solid var(--border); border-radius:20px; width:100%; max-width:700px; padding:32px 28px; position:relative; animation:faqSlide 0.25s ease; }
+        @keyframes faqSlide { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+        .faq-close { position:absolute; top:16px; right:18px; background:none; border:none; color:var(--muted); font-size:1.1rem; cursor:pointer; padding:4px 8px; border-radius:7px; transition:0.2s; }
+        .faq-close:hover { color:#fff; background:rgba(255,255,255,0.08); }
+        .faq-search-wrap { position:relative; margin-bottom:20px; }
+        .faq-search-wrap i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#4a4a6a; font-size:0.82rem; }
+        .faq-search { width:100%; background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:10px 16px 10px 40px; color:#fff; font-size:0.86rem; outline:none; }
+        .faq-search::placeholder { color:#4a4a6a; }
+        .faq-cat { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+        .faq-cat-btn { background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 14px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:0.2s; }
+        .faq-cat-btn:hover, .faq-cat-btn.active { background:rgba(45,181,93,0.15); color:var(--green); border-color:rgba(45,181,93,0.4); }
+        .faq-item { border:1px solid var(--border); border-radius:12px; margin-bottom:10px; overflow:hidden; transition:border-color 0.2s; }
+        .faq-item.open { border-color:rgba(45,181,93,0.35); }
+        .faq-q { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; cursor:pointer; font-weight:600; font-size:0.88rem; color:var(--text); gap:12px; background:transparent; border:none; width:100%; text-align:left; }
+        .faq-q:hover { background:rgba(255,255,255,0.02); }
+        .faq-q-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; flex-shrink:0; }
+        .faq-chevron { color:var(--muted); font-size:0.75rem; transition:transform 0.25s; flex-shrink:0; }
+        .faq-item.open .faq-chevron { transform:rotate(180deg); color:var(--green); }
+        .faq-a { display:none; padding:0 18px 16px 60px; font-size:0.84rem; color:var(--muted); line-height:1.7; }
+        .faq-item.open .faq-a { display:block; animation:fadeInFaq 0.2s; }
+        @keyframes fadeInFaq { from{opacity:0} to{opacity:1} }
+        .faq-a a { color:var(--green); text-decoration:none; }
+        .faq-a a:hover { text-decoration:underline; }
+        .faq-empty { text-align:center; padding:40px 20px; color:var(--muted); }
+        .faq-empty i { font-size:2rem; display:block; margin-bottom:10px; color:#2a2a3a; }
+
+        @media (max-width:992px) {
+            .sidebar { transform:translateX(-100%); }
+            .sidebar.open { transform:translateX(0); }
+            .sidebar-overlay.show { display:block; }
+            .main, .topbar { margin-left:0; left:0; }
+        }
+        @media (max-width:768px) { .main { padding:16px; } .search-bar { display:none; } }
+    </style>
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div>
+            <div class="brand">ELM<span>S</span></div>
+            <div class="brand-sub">Learning Management</div>
+        </div>
+        <button class="sidebar-toggle" onclick="collapseSidebar()" title="Collapse sidebar"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a href="/student/dashboard"  class="nav-item active"><i class="fas fa-chart-pie"></i> <span class="nav-label-text">Dashboard</span></a>
+        <a href="/student/courses"    class="nav-item"><i class="fas fa-book-open"></i> <span class="nav-label-text">My Courses</span></a>
+        <div class="nav-section-label">Academics</div>
+        <a href="/student/attendance" class="nav-item"><i class="fas fa-calendar-check"></i> <span class="nav-label-text">Attendance</span></a>
+        <a href="/student/grades"     class="nav-item"><i class="fas fa-star"></i> <span class="nav-label-text">Grades</span></a>
+        <a href="/student/analytics"  class="nav-item"><i class="fas fa-chart-bar"></i> <span class="nav-label-text">My Analytics</span></a>
+        <div class="nav-section-label">Support</div>
+        <button class="nav-item" onclick="openFaq()"><i class="fas fa-question-circle" style="color:#06b6d4;"></i> <span class="nav-label-text">FAQ / Help</span></button>
+        <div class="nav-section-label">Account</div>
+        <a href="/student/profile"    class="nav-item"><i class="fas fa-user-circle"></i> <span class="nav-label-text">Profile</span></a>
+        <button class="nav-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span class="nav-label-text">Logout</span></button>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="stu-card">
+            <div class="stu-avatar" id="sidebarAvatar">S</div>
+            <div><div class="stu-name" id="sidebarName">Student</div><div class="stu-role">Student</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar" id="topbar">
+    <button class="icon-btn hamburger me-2" onclick="smartToggleSidebar()" title="Toggle Sidebar"><i class="fas fa-bars" style="color:#fff;font-size:1rem;"></i></button>
+    <div class="topbar-title">Dashboard <span>/ Overview</span></div>
+    <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input id="topSearch" placeholder="Search courses…" oninput="window.location='/student/courses?q='+encodeURIComponent(this.value)">
+    </div>
+
+    <!-- Notification Bell -->
+    <div style="position:relative;">
+        <div class="icon-btn" id="notifBtn" onclick="toggleNotif(event)" title="Notifications">
+            <i class="fas fa-bell" style="color:#f59e0b;font-size:1rem;"></i>
+            <div class="notif-dot" id="notifDot" style="display:none;"></div>
+        </div>
+        <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header">
+                <span><i class="fas fa-bell me-2" style="color:var(--orange);"></i>Notifications</span>
+                <button onclick="clearNotifications(event)" id="clearNotifBtn" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;padding:0;" title="Mark all as read">Mark read</button>
+            </div>
+            <div id="notifBody" style="max-height:320px;overflow-y:auto;">
+                <div class="notif-item" style="justify-content:center;color:var(--muted);font-size:0.8rem;">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Loading…
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Menu -->
+    <div style="position:relative;">
+        <div class="icon-btn" id="profileBtn" onclick="toggleProfileMenu(event)" title="Profile">
+            <i class="fas fa-user-circle" style="color:#2db55d;font-size:1rem;"></i>
+        </div>
+        <div class="profile-dropdown" id="profileDropdown">
+            <div class="profile-dropdown-header">
+                <div class="stu-avatar" id="profileMenuAvatar" style="width:32px;height:32px;font-size:0.85rem;">S</div>
+                <div><div style="font-weight:700;font-size:0.83rem;color:#fff;" id="profileMenuName">Student</div><div style="font-size:0.7rem;color:var(--green);">Student Account</div></div>
+            </div>
+            <a href="/student/profile" class="profile-menu-item"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="/student/grades"  class="profile-menu-item"><i class="fas fa-star"></i> My Grades</a>
+            <a href="/student/attendance" class="profile-menu-item"><i class="fas fa-calendar-check"></i> Attendance</a>
+            <a href="/student/courses"    class="profile-menu-item"><i class="fas fa-book-open"></i> My Courses</a>
+            <hr class="profile-sep">
+            <button class="profile-menu-item danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+        </div>
+    </div>
+    <!-- FAQ Button -->
+    <div class="icon-btn" onclick="openFaq()" title="FAQ / Help" style="flex-shrink:0;">
+        <i class="fas fa-question-circle" style="color:#06b6d4;font-size:1rem;"></i>
+    </div>
+</div>
+
+<!-- FAQ Modal -->
+<div class="faq-overlay" id="faqOverlay" onclick="closeFaqOnBackdrop(event)">
+    <div class="faq-box" id="faqBox">
+        <button class="faq-close" onclick="closeFaq()" title="Close"><i class="fas fa-times"></i></button>
+
+        <div class="d-flex align-items-center gap-12 mb-4" style="gap:12px;">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(6,182,212,0.15);color:#06b6d4;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-0" style="color:#fff;">Frequently Asked Questions</h5>
+                <div style="color:var(--muted);font-size:0.78rem;">Everything you need to know about using ELMS</div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="faq-search-wrap">
+            <i class="fas fa-search"></i>
+            <input class="faq-search" id="faqSearch" placeholder="Search questions…" oninput="filterFaq()">
+        </div>
+
+        <!-- Category Filter -->
+        <div class="faq-cat" id="faqCats">
+            <button class="faq-cat-btn active" data-cat="all"      onclick="setCat('all',this)">All</button>
+            <button class="faq-cat-btn"        data-cat="account"  onclick="setCat('account',this)"><i class="fas fa-user me-1"></i>Account</button>
+            <button class="faq-cat-btn"        data-cat="courses"  onclick="setCat('courses',this)"><i class="fas fa-book-open me-1"></i>Courses</button>
+            <button class="faq-cat-btn"        data-cat="assignments" onclick="setCat('assignments',this)"><i class="fas fa-file-alt me-1"></i>Assignments</button>
+            <button class="faq-cat-btn"        data-cat="grades"   onclick="setCat('grades',this)"><i class="fas fa-star me-1"></i>Grades</button>
+            <button class="faq-cat-btn"        data-cat="attendance" onclick="setCat('attendance',this)"><i class="fas fa-calendar-check me-1"></i>Attendance</button>
+        </div>
+
+        <!-- FAQ Items -->
+        <div id="faqList"></div>
+        <div id="faqEmpty" class="faq-empty" style="display:none;">
+            <i class="fas fa-search"></i>No results found for your search.
+        </div>
+
+        <!-- Footer note -->
+        <div style="margin-top:20px;padding:14px 18px;background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:12px;font-size:0.78rem;color:var(--muted);">
+            <i class="fas fa-info-circle me-2" style="color:#06b6d4;"></i>
+            Still need help? Contact your instructor or email <strong style="color:#06b6d4;">support@elms.edu</strong>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="mainContent">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0" id="greetMsg">Good day!</h4>
+            <div style="color:var(--muted); font-size:0.82rem;">Here's your learning overview.
+                <span id="statusBadge" style="display:none; margin-left:10px; padding:2px 10px; border-radius:8px; font-size:0.72rem; font-weight:700; vertical-align:middle;"></span>
+            </div>
+        </div>
+        <div style="color:var(--muted); font-size:0.8rem;" id="todayDate"></div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(45,181,93,0.15); color:var(--green);"><i class="fas fa-book-open"></i></div>
+                <div class="stat-label">Enrolled</div>
+                <div class="stat-value" id="stEnrolled">–</div>
+                <div class="stat-sub">courses active</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(59,130,246,0.15); color:var(--blue);"><i class="fas fa-file-alt"></i></div>
+                <div class="stat-label">Assignments</div>
+                <div class="stat-value" id="stAssignments">–</div>
+                <div class="stat-sub">total given</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(139,92,246,0.15); color:var(--purple);"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-label">Submitted</div>
+                <div class="stat-value" id="stSubmitted">–</div>
+                <div class="stat-sub">assignments done</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(6,182,212,0.15); color:var(--cyan);"><i class="fas fa-calendar-check"></i></div>
+                <div class="stat-label">Attendance</div>
+                <div class="stat-value" id="stAttendance">–</div>
+                <div class="stat-sub">present rate</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(251,191,36,0.15); color:var(--yellow);"><i class="fas fa-graduation-cap"></i></div>
+                <div class="stat-label">CGPA</div>
+                <div class="stat-value" id="stGPA">–</div>
+                <div class="stat-sub">out of 10.0</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(245,158,11,0.15); color:var(--orange);"><i class="fas fa-star"></i></div>
+                <div class="stat-label">XP Points</div>
+                <div class="stat-value" id="stXP">–</div>
+                <div class="stat-sub" id="stXPStage">learning stage</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-chart-line me-2 text-success"></i>Assignment Performance</h6>
+                <canvas id="perfChart"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4 d-flex flex-column gap-3">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-tasks me-2" style="color:var(--cyan);"></i>Submission Status</h6>
+                <canvas id="donutChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar + Upcoming Assignments side by side -->
+    <div class="row g-3 mb-4">
+        <!-- Assignment Calendar -->
+        <div class="col-lg-5">
+            <div class="chart-card h-100">
+                <h6 class="fw-bold mb-3"><i class="fas fa-calendar-alt me-2" style="color:var(--purple);"></i>Assignment Calendar</h6>
+                <div id="assignCalendar"></div>
+            </div>
+        </div>
+        <!-- Upcoming Assignments -->
+        <div class="col-lg-7">
+            <div class="chart-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-clock me-2 text-warning"></i>Upcoming Assignments</h6>
+                    <a href="/student/courses" style="color:var(--green); font-size:0.78rem; font-weight:600; text-decoration:none;">View Courses <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+                <div id="upcomingList"><div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading…</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h6 class="fw-bold mb-0"><i class="fas fa-route me-2" style="color:var(--purple);"></i>Continue Learning</h6>
+            <div style="font-size:0.76rem;color:var(--muted);" id="rubricSummary">Rubric buckets: --</div>
+        </div>
+        <div id="continueLearningList"><div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading…</div></div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="chart-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0"><i class="fas fa-trophy me-2" style="color:var(--yellow);"></i>Top Performers Leaderboard</h6>
+            <span style="color:var(--muted); font-size:0.76rem;">Ranked by XP, rubric status and stage</span>
+        </div>
+        <div id="leaderboardList"><div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading…</div></div>
+    </div>
+
+</div>
+
+<script>
+    /* ── Auth ── */
+    const token     = localStorage.getItem('token');
+    const role      = localStorage.getItem('role');
+    const stuName   = localStorage.getItem('name')    || 'Student';
+    const stuEmail  = localStorage.getItem('email')   || '—';
+    const stuPhone  = localStorage.getItem('phone')   || '—';
+    const stuProgram= localStorage.getItem('program') || '—';
+    const studentId = parseInt(localStorage.getItem('studentId') || '0');
+    if (!token || role !== 'STUDENT') window.location.href = '/login';
+
+    const AUTH = { 'Authorization': 'Bearer ' + token };
+
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function smartToggleSidebar() {
+        if (window.innerWidth <= 992) { toggleSidebar(); } else { collapseSidebar(); }
+    }
+
+    /* Mobile sidebar toggle */
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('show');
+    }
+
+    /* Desktop sidebar collapse */
+    function collapseSidebar() {
+        const sb = document.getElementById('sidebar');
+        const tb = document.getElementById('topbar');
+        const main = document.getElementById('mainContent');
+        sb.classList.toggle('collapsed');
+        tb.classList.toggle('sb-collapsed');
+        main.classList.toggle('sb-collapsed');
+    }
+
+    /* Notification dropdown */
+    let notifViewed = false;
+    let _pendingNotifs = [];
+
+    function toggleNotif(e) {
+        e.stopPropagation();
+        document.getElementById('profileDropdown').classList.remove('show');
+        const dd = document.getElementById('notifDropdown');
+        dd.classList.toggle('show');
+        if (dd.classList.contains('show')) {
+            notifViewed = true;
+            document.getElementById('notifDot').style.display = 'none';
+            renderNotifDropdown(_pendingNotifs, true);
+        }
+    }
+
+    /* Profile dropdown */
+    function toggleProfileMenu(e) {
+        e.stopPropagation();
+        document.getElementById('notifDropdown').classList.remove('show');
+        document.getElementById('profileDropdown').classList.toggle('show');
+    }
+
+    /* Close dropdowns on outside click */
+    document.addEventListener('click', function() {
+        document.getElementById('notifDropdown').classList.remove('show');
+        document.getElementById('profileDropdown').classList.remove('show');
+    });
+
+    function logout() { localStorage.clear(); window.location.href = '/login'; }
+    async function apiFetch(url) {
+        try { const r = await fetch(url, { headers: AUTH }); return r.ok ? await r.json() : null; } catch(_){ return null; }
+    }
+
+    function renderNotifDropdown(pending, viewed) {
+        const body = document.getElementById('notifBody');
+        if (!pending || !pending.length || viewed) {
+            body.innerHTML = `<div class="notif-item" style="justify-content:center;color:var(--muted);font-size:0.8rem;padding:24px;"><i class="fas fa-check-circle me-2" style="color:var(--green);"></i>No new notifications</div>`;
+            return;
+        }
+        const now = new Date();
+        body.innerHTML = pending.map(a => {
+            const due = new Date(a.dueDate);
+            const days = Math.ceil((due - now) / 86400000);
+            const daysLabel = days === 0 ? 'Due today!' : days === 1 ? 'Due tomorrow' : `Due in ${days} days`;
+            const color = days <= 1 ? 'var(--red)' : days <= 3 ? 'var(--orange)' : 'var(--blue)';
+            return `<div class="notif-item">
+                <div class="notif-icon" style="background:rgba(245,158,11,0.15);color:var(--orange);"><i class="fas fa-file-alt"></i></div>
+                <div><div class="notif-text">${esc(a.title||'Assignment')} — pending submission</div>
+                <div class="notif-time" style="color:${color};font-weight:700;"><i class="fas fa-clock me-1"></i>${daysLabel}</div></div>
+            </div>`;
+        }).join('');
+    }
+
+    function clearNotifications(e) {
+        e.stopPropagation();
+        notifViewed = true;
+        _pendingNotifs = [];
+        document.getElementById('notifDot').style.display = 'none';
+        renderNotifDropdown([], true);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        /* Identity */
+        const init = stuName.charAt(0).toUpperCase();
+        document.getElementById('sidebarAvatar').textContent   = init;
+        document.getElementById('sidebarName').textContent     = stuName;
+        document.getElementById('profileMenuAvatar').textContent = init;
+        document.getElementById('profileMenuName').textContent   = stuName;
+
+        /* Greeting */
+        const h = new Date().getHours();
+        document.getElementById('greetMsg').textContent =
+            `Good ${h<12?'morning':h<17?'afternoon':'evening'}, ${stuName}!`;
+        document.getElementById('todayDate').textContent =
+            new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+        /* Load data */
+        const [allCourses, enrolledCourses, subs, studentData, learningData, attData] = await Promise.all([
+            apiFetch('/api/students/courses/all'),
+            apiFetch(`/api/students/${studentId}/courses`),
+            apiFetch(`/api/students/${studentId}/submissions`),
+            apiFetch(`/api/students/${studentId}`),
+            apiFetch(`/api/analytics/student/${studentId}/learning`),
+            apiFetch(`/api/analytics/attendance/student/${studentId}`)
+        ]);
+
+        /* Show status badge */
+        if (studentData && studentData.status) {
+            const st = studentData.status;
+            const stColor = st === 'ACTIVE' ? '#2db55d' : st === 'GRADUATED' ? '#3b82f6' : '#ef4444';
+            const stBg    = st === 'ACTIVE' ? 'rgba(45,181,93,0.12)' : st === 'GRADUATED' ? 'rgba(59,130,246,0.12)' : 'rgba(239,68,68,0.12)';
+            const badge = document.getElementById('statusBadge');
+            badge.textContent = st;
+            badge.style.color = stColor;
+            badge.style.background = stBg;
+            badge.style.border = `1px solid ${stColor}44`;
+            badge.style.display = 'inline-block';
+        }
+
+        const enrolledIds = new Set((enrolledCourses||[]).map(c => c.courseId));
+
+        let assigns = [];
+        for (const cid of enrolledIds) {
+            const list = await apiFetch(`/api/assignments/course/${cid}`);
+            if (list) assigns = assigns.concat(list);
+        }
+        const seen = new Set();
+        assigns = assigns.filter(a => { if(seen.has(a.assignmentId)) return false; seen.add(a.assignmentId); return true; });
+
+        const mySubs = subs || [];
+        const now    = new Date();
+
+        /* Stats */
+        document.getElementById('stEnrolled').textContent    = enrolledIds.size;
+        document.getElementById('stAssignments').textContent = assigns.length;
+        document.getElementById('stSubmitted').textContent   = mySubs.length;
+        // Use real attendance data from API
+        const attPct = attData ? (attData.percentage || 0) : 0;
+        document.getElementById('stAttendance').textContent  = attPct + '%';
+
+        /* CGPA + XP */
+        const gpaData = await apiFetch(`/api/analytics/gpa/student/${studentId}`);
+        if (gpaData) {
+            document.getElementById('stGPA').textContent = gpaData.cgpa || '0.00';
+        }
+        if (learningData) {
+            document.getElementById('stXP').textContent = learningData.xpPoints || 0;
+            document.getElementById('stXPStage').textContent = `${learningData.xpStage || 'Beginner'} stage`;
+            const r = learningData.rubric || {};
+            document.getElementById('rubricSummary').textContent =
+                `Rubric buckets: Ex ${r.exemplary||0} · Pr ${r.proficient||0} · Dev ${r.developing||0} · Beg ${r.beginner||0}`;
+            renderContinueLearning(learningData.continueLearning || []);
+        } else {
+            document.getElementById('stXP').textContent = '0';
+            document.getElementById('stXPStage').textContent = 'Beginner stage';
+            renderContinueLearning([]);
+        }
+
+        /* Charts */
+        buildPerfChart(mySubs);
+        buildDonut(mySubs, assigns);
+
+        /* Assignment Calendar */
+        renderCalendar(assigns, mySubs);
+
+        /* Upcoming */
+        renderUpcoming(assigns, mySubs);
+
+        /* Notifications: pending (not submitted, not overdue) */
+        const nowN = new Date();
+        _pendingNotifs = assigns.filter(a => new Date(a.dueDate) >= nowN && !mySubs.find(s => (s.assignment?.assignmentId ?? s.assignmentId) === a.assignmentId))
+            .sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate)).slice(0, 10);
+        if (_pendingNotifs.length > 0 && !notifViewed) {
+            document.getElementById('notifDot').style.display = 'block';
+        }
+        renderNotifDropdown(_pendingNotifs, false);
+
+        /* Leaderboard */
+        renderLeaderboard();
+    });
+
+    function buildPerfChart(subs) {
+        const graded = subs.filter(s => s.score != null);
+        const gc = 'rgba(255,255,255,0.04)', fn = { size:11 };
+        new Chart(document.getElementById('perfChart'), {
+            type:'line',
+            data:{ labels: graded.length ? graded.map((_,i)=>'Sub '+(i+1)) : ['No data'],
+                   datasets:[{ label:'Score', data: graded.length ? graded.map(s=>s.score) : [0],
+                       borderColor:'#2db55d', backgroundColor:'rgba(45,181,93,0.08)',
+                       tension:0.4, fill:true, pointBackgroundColor:'#2db55d', pointRadius:4 }] },
+            options:{ responsive:true, maintainAspectRatio:true,
+                plugins:{ legend:{ labels:{ color:'#9ca3af', font:fn } } },
+                scales:{ x:{ grid:{color:gc}, ticks:{color:'#6b7280',font:fn} }, y:{ grid:{color:gc}, ticks:{color:'#6b7280',font:fn}, min:0 } } }
+        });
+    }
+
+    function renderContinueLearning(rows) {
+        const el = document.getElementById('continueLearningList');
+        if (!rows || !rows.length) {
+            el.innerHTML = `<div style="color:var(--muted);padding:16px 0;">No enrolled courses yet.</div>`;
+            return;
+        }
+        el.innerHTML = rows.slice(0, 6).map(r => {
+            const pct = Math.max(0, Math.min(100, r.progress || 0));
+            const color = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
+            const isCompleted = pct >= 100;
+            return `
+            <div class="upcoming-item">
+                <div style="width:40px;height:40px;border-radius:10px;background:${pct>=80?'rgba(45,181,93,0.15)':'rgba(59,130,246,0.15)'};color:${pct>=80?'var(--green)':'var(--blue)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.title)}</div>
+                    <div style="font-size:0.74rem;color:var(--muted);">${r.submitted||0}/${r.totalAssignments||0} assignments · ${r.pending||0} pending · ${isCompleted ? 'Completed' : ('In progress ' + pct + '%')}</div>
+                    <div style="margin-top:6px;background:var(--card2);border-radius:6px;height:6px;overflow:hidden;">
+                        <div style="width:${pct}%;height:100%;background:${color};"></div>
+                    </div>
+                </div>
+                <div style="font-size:0.78rem;font-weight:800;color:${color};">${pct}%</div>
+                ${isCompleted
+                    ? '<button class="btn-submit-assign" style="opacity:0.65;cursor:not-allowed;pointer-events:none;background:linear-gradient(135deg,#6b7280,#4b5563);" disabled>Completed</button>'
+                    : `<a href="/student/courses/content?courseId=${r.courseId}" class="btn-submit-assign">Continue</a>`}
+            </div>`;
+        }).join('');
+    }
+
+    function buildDonut(subs, assigns) {
+        const now = new Date();
+        // Helper: get assignmentId from a submission (handles nested or flat)
+        const getSubAssignId = s => s.assignment?.assignmentId ?? s.assignmentId;
+        const submitted = subs.length;
+        const pending   = assigns.filter(a => !subs.find(s=>getSubAssignId(s)===a.assignmentId) && new Date(a.dueDate)>=now).length;
+        const overdue   = assigns.filter(a => !subs.find(s=>getSubAssignId(s)===a.assignmentId) && new Date(a.dueDate)<now).length;
+        new Chart(document.getElementById('donutChart'), {
+            type:'doughnut',
+            data:{ labels:['Submitted','Pending','Overdue'],
+                   datasets:[{ data:[submitted,pending,overdue], backgroundColor:['#2db55d','#f59e0b','#ef4444'], borderWidth:0, hoverOffset:5 }] },
+            options:{ responsive:true, cutout:'72%', plugins:{ legend:{ labels:{ color:'#9ca3af', font:{size:11} } } } }
+        });
+    }
+
+    function renderUpcoming(assigns, subs) {
+        const now  = new Date();
+        // Helper: get assignmentId from a submission (handles nested or flat)
+        const getSubAssignId = s => s.assignment?.assignmentId ?? s.assignmentId;
+        // Only show assignments NOT yet submitted AND due in the future
+        const list = assigns.filter(a => new Date(a.dueDate)>=now && !subs.find(s=>getSubAssignId(s)===a.assignmentId))
+                            .sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate)).slice(0,4);
+        const el   = document.getElementById('upcomingList');
+        if (!list.length) { el.innerHTML = `<div style="color:var(--muted);padding:16px 0;">No upcoming assignments 🎉</div>`; return; }
+        el.innerHTML = list.map(a => {
+            const due  = new Date(a.dueDate);
+            const days = Math.ceil((due-now)/86400000);
+            const fmt  = due.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            const courseId = a.courseId || (a.course ? a.course.courseId : '');
+            return `
+            <div class="upcoming-item">
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(245,158,11,0.15);color:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-weight:600;font-size:0.88rem;">${esc(a.title||'Untitled')}</div>
+                    <div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">Course #${courseId} · Due ${fmt}</div>
+                </div>
+                <div style="font-size:0.76rem;font-weight:700;color:${days<=3?'var(--red)':'var(--orange)'};">${days===0?'Today!':days+'d left'}</div>
+                <a href="/student/courses/content?courseId=${courseId}" class="btn-submit-assign"><i class="fas fa-book-open me-1"></i>View Course</a>
+            </div>`;
+        }).join('');
+    }
+
+    async function renderLeaderboard() {
+        const el = document.getElementById('leaderboardList');
+        const board = await apiFetch('/api/students/leaderboard');
+        if (!board || !board.length) {
+            el.innerHTML = `<div style="color:var(--muted);padding:16px 0;text-align:center;">No leaderboard data yet.</div>`;
+            return;
+        }
+        const medals = ['🥇','🥈','🥉'];
+        const ordinal = n => {
+            const mod100 = n % 100;
+            if (mod100 >= 11 && mod100 <= 13) return n + 'th';
+            const mod10 = n % 10;
+            if (mod10 === 1) return n + 'st';
+            if (mod10 === 2) return n + 'nd';
+            if (mod10 === 3) return n + 'rd';
+            return n + 'th';
+        };
+        el.innerHTML = board.map((entry, idx) => {
+            const isMe    = entry.studentId === studentId;
+            const rank = Number(entry.rank || (idx + 1));
+            const medal   = rank <= 3 ? medals[rank - 1] : `<span style="color:var(--muted);font-weight:700;">${ordinal(rank)}</span>`;
+            const barPct  = Math.min(100, Number(entry.completionPercentage || 0));
+            const color   = idx===0 ? '#fbbf24' : idx===1 ? '#9ca3af' : idx===2 ? '#f59e0b' : 'var(--green)';
+            const highlight = isMe ? 'border-left:3px solid var(--green);background:rgba(45,181,93,0.05);' : '';
+            return `
+            <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border);${highlight}padding-left:${isMe?'10px':'0'};">
+                <div style="width:32px;text-align:center;font-size:1.1rem;flex-shrink:0;">${medal}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;font-size:0.88rem;color:${isMe?'var(--green)':'#fff'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        ${esc(entry.name)}${isMe?' <span style="font-size:0.7rem;color:var(--green);">(You)</span>':''}
+                    </div>
+                    <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${esc(entry.rubricStatus || 'Beginner')} · ${esc(entry.xpStage || 'Beginner')} stage</div>
+                    <div style="background:var(--card2);border-radius:4px;height:5px;margin-top:5px;overflow:hidden;">
+                        <div style="width:${barPct}%;height:100%;background:${color};border-radius:4px;transition:width 1s ease;"></div>
+                    </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                    <div style="font-weight:900;color:${color};font-size:1rem;">${entry.xpPoints || 0} XP</div>
+                    <div style="font-size:0.68rem;color:var(--muted);">${entry.completionPercentage || 0}% complete</div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    /* ── Assignment Calendar ── */
+    let calAssigns = [];
+    let calSubs = [];
+    let calYear, calMonth;
+
+    function renderCalendar(assigns, subs, year, month) {
+        calAssigns = assigns || calAssigns;
+        calSubs    = subs    || calSubs;
+        const today = new Date();
+        calYear  = year  != null ? year  : today.getFullYear();
+        calMonth = month != null ? month : today.getMonth();
+
+        // Build a map: dateKey → list of assignment titles (due dates)
+        const dueMap = {};
+        calAssigns.forEach(a => {
+            if (!a.dueDate) return;
+            const d = new Date(a.dueDate);
+            if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+                const key = d.getDate();
+                if (!dueMap[key]) dueMap[key] = [];
+                dueMap[key].push({ title: a.title || 'Assignment', courseId: a.courseId || (a.course ? a.course.courseId : '') });
+            }
+        });
+
+        const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const dayLabels  = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+        const firstDay = new Date(calYear, calMonth, 1).getDay();
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        const isCurrentMonth = today.getFullYear() === calYear && today.getMonth() === calMonth;
+
+        let grid = `
+        <div class="cal-header">
+            <button class="cal-nav" onclick="renderCalendar(null,null,${calMonth===0?calYear-1:calYear},${calMonth===0?11:calMonth-1})"><i class="fas fa-chevron-left"></i></button>
+            <span class="cal-month-label">${monthNames[calMonth]} ${calYear}</span>
+            <button class="cal-nav" onclick="renderCalendar(null,null,${calMonth===11?calYear+1:calYear},${calMonth===11?0:calMonth+1})"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="cal-grid">
+            ${dayLabels.map(d=>`<div class="cal-day-label">${d}</div>`).join('')}
+            ${Array(firstDay).fill(`<div class="cal-cell empty"></div>`).join('')}
+            ${Array.from({length:daysInMonth},(_,i)=>{
+                const day = i+1;
+                const isToday = isCurrentMonth && day === today.getDate();
+                const hasDue  = !!dueMap[day];
+                let cls = 'cal-cell';
+                if (isToday) cls += ' today';
+                if (hasDue)  cls += ' has-due';
+                let inner = `${day}`;
+                if (hasDue) {
+                    const titles = dueMap[day].map(x=>esc(x.title)).join('<br>');
+                    inner += `<div class="cal-dot"></div><div class="cal-tooltip"><i class="fas fa-file-alt me-1" style="color:var(--orange);"></i>${titles}</div>`;
+                }
+                return `<div class="${cls}">${inner}</div>`;
+            }).join('')}
+        </div>
+        <div class="cal-legend">
+            <span><span class="cal-legend-dot" style="background:var(--orange);"></span>Due date</span>
+            <span><span class="cal-legend-dot" style="background:var(--green);"></span>Today</span>
+        </div>`;
+
+        document.getElementById('assignCalendar').innerHTML = grid;
+    }
+</script>
+
+<script>
+/* ══════════════════════════════════════════
+   FAQ DATA & LOGIC
+══════════════════════════════════════════ */
+const FAQ_DATA = [
+    // ── Account ──
+    { cat:'account', icon:'fa-user-circle', iconBg:'rgba(45,181,93,0.15)', iconCol:'#2db55d',
+      q:'How do I log in to ELMS?',
+      a:'Visit the login page at <a href="/login">/login</a> and enter your registered email and password. If you forgot your password, contact your admin or instructor.' },
+    { cat:'account', icon:'fa-key', iconBg:'rgba(139,92,246,0.15)', iconCol:'#8b5cf6',
+      q:'How do I change my password?',
+      a:'Currently password changes are managed by the administrator. Please contact your admin to reset or update your password.' },
+    { cat:'account', icon:'fa-sign-out-alt', iconBg:'rgba(239,68,68,0.15)', iconCol:'#ef4444',
+      q:'How do I log out safely?',
+      a:'Click the <strong>Logout</strong> button in the sidebar or use the Profile menu at the top-right. This clears your session token from the browser.' },
+    { cat:'account', icon:'fa-id-badge', iconBg:'rgba(6,182,212,0.15)', iconCol:'#06b6d4',
+      q:'Where can I see my Student ID and profile details?',
+      a:'Go to <a href="/student/profile">My Profile</a> from the sidebar or profile menu. You can view your name, email, Student ID, program, and account status there.' },
+
+    // ── Courses ──
+    { cat:'courses', icon:'fa-book-open', iconBg:'rgba(59,130,246,0.15)', iconCol:'#3b82f6',
+      q:'How do I see my enrolled courses?',
+      a:'Click <a href="/student/courses">My Courses</a> in the sidebar. All courses you are enrolled in will be listed there with their status and available assignments.' },
+    { cat:'courses', icon:'fa-user-plus', iconBg:'rgba(45,181,93,0.15)', iconCol:'#2db55d',
+      q:'How do I enroll in a new course?',
+      a:'Course enrollment is handled by the admin. Contact your administrator to be enrolled in a course. Once enrolled, it will appear in your My Courses section automatically.' },
+    { cat:'courses', icon:'fa-info-circle', iconBg:'rgba(245,158,11,0.15)', iconCol:'#f59e0b',
+      q:'What does ACTIVE/INACTIVE course status mean?',
+      a:'<strong>ACTIVE</strong> means the course is currently running and accepting submissions. <strong>INACTIVE</strong> means the course has ended or is paused — you can still view content but may not submit new assignments.' },
+    { cat:'courses', icon:'fa-chalkboard-teacher', iconBg:'rgba(139,92,246,0.15)', iconCol:'#8b5cf6',
+      q:'Who is my course instructor?',
+      a:'Your course instructor is assigned by the administrator. You can see the instructor name on the course details page. If no instructor is shown, the course may not yet have one assigned.' },
+
+    // ── Assignments ──
+    { cat:'assignments', icon:'fa-file-alt', iconBg:'rgba(6,182,212,0.15)', iconCol:'#06b6d4',
+      q:'How do I submit an assignment?',
+      a:'Go to <a href="/student/assignments">Assignments</a> in the sidebar. Find the assignment, click the <strong>Submit</strong> button, write your answer, optionally paste a file link, and click Submit.' },
+    { cat:'assignments', icon:'fa-clock', iconBg:'rgba(245,158,11,0.15)', iconCol:'#f59e0b',
+      q:'What happens if I miss the due date?',
+      a:'Assignments past their due date are marked as <strong>Overdue</strong> and the Submit button is disabled. Contact your instructor if you need a deadline extension.' },
+    { cat:'assignments', icon:'fa-redo', iconBg:'rgba(139,92,246,0.15)', iconCol:'#8b5cf6',
+      q:'Can I resubmit an assignment?',
+      a:'Once submitted, assignments cannot be resubmitted unless your instructor enables a retake. If a retake is allowed, you will see a Retake option on the Grades page.' },
+    { cat:'assignments', icon:'fa-check-circle', iconBg:'rgba(45,181,93,0.15)', iconCol:'#2db55d',
+      q:'How do I know if my submission was received?',
+      a:'After submitting, the assignment status changes from <em>Pending</em> to <em>Submitted</em> (shown in green). You can verify this on the Assignments or Grades page.' },
+    { cat:'assignments', icon:'fa-link', iconBg:'rgba(59,130,246,0.15)', iconCol:'#3b82f6',
+      q:'What type of file links can I submit?',
+      a:'You can paste any public file link (Google Drive, OneDrive, GitHub, etc.) in the optional File Link field. Make sure the link is publicly accessible or shared with the instructor.' },
+
+    // ── Grades ──
+    { cat:'grades', icon:'fa-star', iconBg:'rgba(251,191,36,0.15)', iconCol:'#fbbf24',
+      q:'Where do I see my grades?',
+      a:'Visit <a href="/student/grades">Grades</a> from the sidebar. All graded assignment submissions are listed with your score, percentage, letter grade, and instructor feedback.' },
+    { cat:'grades', icon:'fa-graduation-cap', iconBg:'rgba(45,181,93,0.15)', iconCol:'#2db55d',
+      q:'How is my CGPA calculated?',
+      a:'Your CGPA is calculated on a 10-point scale based on the average of graded assignment scores across all your enrolled courses. Visit <a href="/student/analytics">My Analytics</a> to see the breakdown.' },
+    { cat:'grades', icon:'fa-award', iconBg:'rgba(245,158,11,0.15)', iconCol:'#f59e0b',
+      q:'What are XP Points?',
+      a:'XP (Experience Points) are earned by submitting assignments on time, scoring well, and maintaining good attendance. Higher XP unlocks better stages: <strong>Beginner → Intermediate → Advanced → Expert</strong>.' },
+    { cat:'grades', icon:'fa-comment', iconBg:'rgba(6,182,212,0.15)', iconCol:'#06b6d4',
+      q:'Can I see instructor feedback on my assignment?',
+      a:'Yes. On the <a href="/student/grades">Grades</a> page, the Feedback column shows any comments your instructor left on your submission. If empty, no feedback was provided yet.' },
+
+    // ── Attendance ──
+    { cat:'attendance', icon:'fa-calendar-check', iconBg:'rgba(45,181,93,0.15)', iconCol:'#2db55d',
+      q:'How is my attendance tracked?',
+      a:'Your instructor marks attendance manually through the Instructor Dashboard for each class session. Each record is logged as <strong>PRESENT</strong> or <strong>ABSENT</strong> per course.' },
+    { cat:'attendance', icon:'fa-percent', iconBg:'rgba(59,130,246,0.15)', iconCol:'#3b82f6',
+      q:'What percentage attendance do I need?',
+      a:'Most programs require a minimum of <strong>75% attendance</strong> to be eligible for exams and course completion. Check with your institution for the exact requirement.' },
+    { cat:'attendance', icon:'fa-eye', iconBg:'rgba(139,92,246,0.15)', iconCol:'#8b5cf6',
+      q:'Where can I view my attendance records?',
+      a:'Go to <a href="/student/attendance">Attendance</a> in the sidebar. You can see your attendance percentage per course and the full history of PRESENT/ABSENT records.' },
+    { cat:'attendance', icon:'fa-exclamation-triangle', iconBg:'rgba(239,68,68,0.15)', iconCol:'#ef4444',
+      q:'My attendance is marked wrong. What should I do?',
+      a:'If you believe your attendance is incorrect, contact your instructor directly. Attendance records can only be corrected by the instructor who marked them.' },
+];
+
+let currentCat = 'all';
+
+function renderFaq() {
+    const q = (document.getElementById('faqSearch')?.value || '').toLowerCase().trim();
+    const list = document.getElementById('faqList');
+    const empty = document.getElementById('faqEmpty');
+
+    const filtered = FAQ_DATA.filter(f => {
+        const matchCat = currentCat === 'all' || f.cat === currentCat;
+        const matchQ   = !q || f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q);
+        return matchCat && matchQ;
+    });
+
+    if (!filtered.length) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+    empty.style.display = 'none';
+
+    list.innerHTML = filtered.map((f, i) => `
+        <div class="faq-item" id="faqItem_${i}">
+            <button class="faq-q" onclick="toggleFaqItem(${i})">
+                <div style="display:flex;align-items:center;gap:12px;flex:1;">
+                    <div class="faq-q-icon" style="background:${f.iconBg};color:${f.iconCol};">
+                        <i class="fas ${f.icon}"></i>
+                    </div>
+                    <span>${f.q}</span>
+                </div>
+                <i class="fas fa-chevron-down faq-chevron"></i>
+            </button>
+            <div class="faq-a">${f.a}</div>
+        </div>`).join('');
+}
+
+function toggleFaqItem(i) {
+    const el = document.getElementById('faqItem_' + i);
+    if (!el) return;
+    el.classList.toggle('open');
+}
+
+function filterFaq() { renderFaq(); }
+function setCat(cat, btn) {
+    currentCat = cat;
+    document.querySelectorAll('.faq-cat-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderFaq();
+}
+
+function openFaq() {
+    document.getElementById('faqOverlay').classList.add('show');
+    document.getElementById('faqSearch').value = '';
+    currentCat = 'all';
+    document.querySelectorAll('.faq-cat-btn').forEach(b => b.classList.remove('active'));
+    const allBtn = document.querySelector('.faq-cat-btn[data-cat="all"]');
+    if (allBtn) allBtn.classList.add('active');
+    renderFaq();
+    document.body.style.overflow = 'hidden';
+}
+
+function closeFaq() {
+    document.getElementById('faqOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+function closeFaqOnBackdrop(e) {
+    if (e.target === document.getElementById('faqOverlay')) closeFaq();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFaq(); });
+</script>
+</body>
+</html>

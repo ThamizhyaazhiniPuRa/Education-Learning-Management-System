@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>ELMS – Courses</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root {
+            --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26;
+            --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6;
+            --orange:#f59e0b; --red:#ef4444; --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9;
+        }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+
+        /* Sidebar */
+        .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:300; transition:transform 0.3s, width 0.3s; }
+        .sidebar.collapsed { width:64px; }
+        .sidebar.collapsed .brand-sub,
+        .sidebar.collapsed .admin-name,
+        .sidebar.collapsed .admin-role { display:none; }
+        .sidebar.collapsed .nav-link-item { justify-content:center; font-size:0; padding:11px 0; }
+        .sidebar.collapsed .nav-link-item i { font-size:0.9rem; }
+        .sidebar.collapsed .nav-section-label { display:none; }
+        .sidebar.collapsed .admin-mini-card { justify-content:center; padding:10px; }
+        .sidebar-header { padding:18px 14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+        .sidebar-toggle { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:5px 7px; border-radius:7px; transition:0.2s; flex-shrink:0; margin-left:auto; }
+        .sidebar-toggle:hover { color:#fff; background:rgba(255,255,255,0.07); }
+        .brand { font-size:1.4rem; font-weight:900; color:#fff; }
+        .brand span { color:var(--green); }
+        .brand-sub { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+        .nav-section-label { color:#4a4a6a; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; padding:12px 8px 6px; margin-top:8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+        .nav-section-label i { font-size:0.62rem; transition:transform 0.2s ease; }
+        .nav-link-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:0.86rem; font-weight:500; transition:all 0.2s; margin-bottom:2px; position:relative; }
+        .nav-link-item i { width:18px; text-align:center; font-size:0.9rem; flex-shrink:0; }
+        .nav-link-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-link-item.active { color:#fff; background:linear-gradient(135deg,rgba(45,181,93,0.2),rgba(45,181,93,0.05)); }
+        .nav-link-item.active i { color:var(--green); }
+        .nav-link-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--green); border-radius:0 3px 3px 0; }
+        .nav-badge { margin-left:auto; background:var(--red); color:#fff; font-size:0.65rem; font-weight:700; padding:2px 7px; border-radius:10px; }
+        .nav-link-item.logout { color:#ef4444; }
+        .nav-link-item.logout:hover { background:rgba(239,68,68,0.1); }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .admin-mini-card { background:var(--card); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .admin-avatar { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--green),var(--green2)); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem; color:#fff; flex-shrink:0; }
+        .admin-name { font-weight:600; font-size:0.82rem; color:#fff; }
+        .admin-role { font-size:0.7rem; color:var(--muted); }
+
+        /* Topbar */
+        .topbar { position:fixed; top:0; left:240px; right:0; height:64px; background:rgba(15,15,19,0.95); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200; transition:left 0.3s; }
+        .topbar.sb-collapsed { left:64px; }
+        .topbar-title { font-weight:700; font-size:1.1rem; flex:1; }
+        .topbar-title span { color:var(--muted); font-weight:400; font-size:0.82rem; margin-left:8px; }
+        .search-bar { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:8px 14px; display:flex; align-items:center; gap:8px; width:220px; }
+        .search-bar input { background:transparent; border:none; outline:none; color:#fff; font-size:0.82rem; width:100%; }
+        .search-bar input::placeholder { color:#4a4a6a; }
+        .search-bar i { color:#4a4a6a; font-size:0.8rem; }
+        .icon-btn { width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; transition:0.2s; position:relative; }
+        .icon-btn:hover { border-color:#888; background:rgba(255,255,255,0.12); }
+        .sidebar.collapsed .nav-link-item i { color:#fff !important; font-size:0.95rem; }
+        .notif-dot { position:absolute; top:7px; right:7px; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid var(--bg); }
+
+        /* Main */
+        .main { margin-left:240px; margin-top:64px; padding:28px; transition:margin-left 0.3s; }
+        .main.sb-collapsed { margin-left:64px; }
+        .hidden { display:none; }
+
+        /* Course cards */
+        .course-card {
+            background:var(--card); border:1px solid var(--border); border-radius:16px;
+            padding:22px; height:100%; display:flex; flex-direction:column;
+            transition:all 0.
+			25s; cursor:pointer; position:relative; overflow:hidden;
+        }
+        .course-card:hover { border-color:var(--green); transform:translateY(-4px); box-shadow:0 12px 30px rgba(45,181,93,0.1); }
+        .course-card-accent {
+            position:absolute; top:0; left:0; right:0; height:3px;
+            background:linear-gradient(90deg, var(--green), var(--blue));
+            opacity:0; transition:opacity 0.25s;
+        }
+        .course-card:hover .course-card-accent { opacity:1; }
+
+        .course-id-badge { background:rgba(45,181,93,0.1); color:var(--green); border-radius:8px; padding:3px 10px; font-size:0.72rem; font-weight:800; display:inline-block; }
+        .status-pill { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.68rem; font-weight:700; text-transform:uppercase; }
+        .status-pill.active   { background:rgba(45,181,93,0.15); color:var(--green); }
+        .status-pill.inactive { background:rgba(156,163,175,0.15); color:var(--muted); }
+
+        .course-title { font-size:1rem; font-weight:700; margin:10px 0 6px; color:#fff; }
+        .course-desc  { font-size:0.8rem; color:var(--muted); line-height:1.6; flex:1; }
+
+        .course-meta { display:flex; gap:14px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+        .meta-item { display:flex; align-items:center; gap:5px; font-size:0.75rem; color:var(--muted); }
+        .meta-item i { color:var(--green); font-size:0.7rem; }
+
+        .card-actions { margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+        .btn-view-course { background:linear-gradient(135deg,var(--green),var(--green2)); color:#fff; border:none; border-radius:8px; padding:9px; font-size:0.8rem; font-weight:700; width:100%; cursor:pointer; transition:opacity 0.2s; }
+        .btn-view-course:hover { opacity:0.85; }
+        .card-actions-row { display:flex; gap:8px; }
+        .btn-edit { flex:1; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); color:var(--blue); border-radius:8px; padding:7px; font-size:0.76rem; font-weight:600; cursor:pointer; transition:0.2s; }
+        .btn-edit:hover { background:rgba(59,130,246,0.2); }
+        .btn-del  { flex:1; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:var(--red); border-radius:8px; padding:7px; font-size:0.76rem; font-weight:600; cursor:pointer; transition:0.2s; }
+        .btn-del:hover { background:rgba(239,68,68,0.2); }
+
+        /* Form panel */
+        .form-panel { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; }
+        .form-group { margin-bottom:18px; }
+        .form-label-custom { color:var(--muted); font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:7px; display:block; }
+        .form-input {
+            width:100%; background:var(--card2); border:1px solid var(--border);
+            color:#fff; border-radius:10px; padding:11px 14px; font-size:0.88rem; outline:none; transition:border-color 0.2s;
+        }
+        .form-input:focus { border-color:var(--green); }
+        .form-input::placeholder { color:#4a4a6a; }
+        .btn-save { background:linear-gradient(135deg,var(--green),var(--green2)); color:#fff; border:none; border-radius:10px; padding:11px 28px; font-weight:700; font-size:0.88rem; cursor:pointer; transition:opacity 0.2s; }
+        .btn-save:hover { opacity:0.85; }
+        .btn-cancel { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:10px; padding:11px 24px; font-weight:600; font-size:0.88rem; cursor:pointer; transition:0.2s; }
+        .btn-cancel:hover { border-color:#555; color:#fff; }
+
+        /* Filter/search bar */
+        .filter-bar { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:22px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+        .filter-search { background:var(--card2); border:1px solid var(--border); border-radius:9px; padding:8px 14px; color:#fff; font-size:0.84rem; outline:none; flex:1; min-width:180px; }
+        .filter-search::placeholder { color:#4a4a6a; }
+        .filter-select { background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:9px; padding:8px 14px; font-size:0.84rem; outline:none; cursor:pointer; }
+        .counter-pill { background:rgba(45,181,93,0.1); color:var(--green); border-radius:8px; padding:4px 12px; font-size:0.78rem; font-weight:700; }
+
+        /* Empty state */
+        .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+        .empty-state i { font-size:3rem; color:#2a2a3a; margin-bottom:16px; display:block; }
+
+        /* Responsive */
+        .hamburger { display: flex; }
+        @media (max-width:992px) {
+            .sidebar { transform:translateX(-100%); width:240px !important; }
+            .sidebar.open { transform:translateX(0); }
+            .main, .topbar { margin-left:0 !important; left:0 !important; }
+        }
+        @media (max-width:768px) {
+            .main { padding:16px; }
+            .search-bar { display:none; }
+        }
+    </style>x`
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:299;" onclick="toggleSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div>
+            <div class="brand">ELM<span>S</span></div>
+            <div class="brand-sub">Learning Management System</div>
+        </div>
+        <button class="sidebar-toggle" onclick="collapseSidebar()" title="Collapse sidebar"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label" onclick="toggleNavSection(this)">Main <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/dashboard" class="nav-link-item"><i class="fas fa-chart-pie"></i> Dashboard</a>
+        <a href="/web/admin/courses"   class="nav-link-item active"><i class="fas fa-book-open"></i> Courses</a>
+        <a href="/web/admin/students"  class="nav-link-item"><i class="fas fa-user-graduate"></i> Students</a>
+        <div class="nav-section-label" onclick="toggleNavSection(this)">Academics <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/attendance" class="nav-link-item"><i class="fas fa-calendar-check"></i> Attendance</a>
+        <a href="/web/admin/analytics" class="nav-link-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+        <div class="nav-section-label" onclick="toggleNavSection(this)">System <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/profile" class="nav-link-item"><i class="fas fa-user-shield"></i> Profile</a>
+        <a href="#" class="nav-link-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="admin-mini-card">
+            <div class="admin-avatar" id="sidebarAvatar">A</div>
+            <div><div class="admin-name" id="sidebarName">Admin</div><div class="admin-role">Administrator</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="topbar" id="topbar">
+    <button class="icon-btn hamburger me-2" onclick="smartToggleSidebar()" title="Toggle Sidebar"><i class="fas fa-bars" style="color:#fff;font-size:1rem;"></i></button>
+    <div class="topbar-title">Courses <span>/ Management</span></div>
+    <div class="search-bar"><i class="fas fa-search"></i><input placeholder="Search courses…" oninput="filterCards(this.value)"></div>
+    <div class="icon-btn"><i class="fas fa-bell" style="color:#f59e0b;font-size:1rem;"></i><div class="notif-dot"></div></div>
+    <div class="icon-btn" onclick="window.location='/web/admin/profile'"><i class="fas fa-user-shield" style="color:#2db55d;font-size:1rem;"></i></div>
+</div>
+
+<div class="main" id="mainArea">
+
+    <div th:if="${message}" class="alert alert-success py-2 mb-3" th:text="${message}"></div>
+
+    <div id="listView">
+
+        <div class="filter-bar">
+            <i class="fas fa-filter" style="color:var(--muted);"></i>
+            <input class="filter-search" placeholder="Search by title" oninput="filterCards(this.value)">
+            <select class="filter-select" onchange="filterByStatus(this.value)">
+                <option value="">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+            </select>
+            <span class="counter-pill" id="courseCounter">0 Courses</span>
+            <button onclick="showForm()" style="margin-left:auto; background:linear-gradient(135deg,var(--green),var(--green2)); color:#fff; border:none; border-radius:10px; padding:9px 20px; font-weight:700; font-size:0.84rem; cursor:pointer;">
+                <i class="fas fa-plus me-1"></i> New Course
+            </button>
+            <button onclick="openCreateInstructor()" style="background:linear-gradient(135deg,var(--orange),#b45309); color:#fff; border:none; border-radius:10px; padding:9px 20px; font-weight:700; font-size:0.84rem; cursor:pointer;">
+                <i class="fas fa-chalkboard-teacher me-1"></i> Create Instructor
+            </button>
+            <button onclick="openAssignmentStatusModal()" style="background:linear-gradient(135deg,var(--purple),#6d28d9); color:#fff; border:none; border-radius:10px; padding:9px 20px; font-weight:700; font-size:0.84rem; cursor:pointer;">
+                <i class="fas fa-tasks me-1"></i> Assignment Status
+            </button>
+        </div>
+
+        <div class="row g-3" id="courseCardsGrid">
+            <div class="col-12" th:if="${#lists.isEmpty(courses)}">
+                <div class="empty-state">
+                    <i class="fas fa-book-open"></i>
+                    <p class="fw-bold">No courses yet</p>
+                    <p class="small">Click "New Course" to create your first course.</p>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-lg-4 col-md-6 course-item"
+                 th:each="course : ${courses}"
+                 th:data-id="${course.courseId}"
+                 th:data-status="${course.status}"
+                 th:data-title="${course.title}">
+                <div class="course-card"
+                     th:data-id="${course.courseId}"
+                     th:data-title="${course.title}"
+                     onclick="viewCourse(this.getAttribute('data-id'), this.getAttribute('data-title'))">
+                    <div class="course-card-accent"></div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="course-id-badge" th:text="'#' + ${course.courseId}"></span>
+                        <span class="status-pill"
+                              th:classappend="${course.status == 'ACTIVE' ? 'active' : 'inactive'}"
+                              th:text="${course.status ?: 'INACTIVE'}"></span>
+                    </div>
+
+                    <div class="course-title" th:text="${course.title}">Course Title</div>
+                    <div class="course-desc" th:text="${course.description}">Description…</div>
+
+                    <div class="course-meta">
+                        <div class="meta-item"><i class="fas fa-calendar-alt"></i><span th:text="${course.semester ?: 'N/A'}"></span></div>
+                        <div class="meta-item"><i class="fas fa-star"></i><span th:text="${course.credits ?: 0} + ' Credits'"></span></div>
+                    </div>
+
+                    <div class="card-actions">
+                        <button type="button" class="btn-view-course"
+                                th:data-id="${course.courseId}"
+                                th:data-title="${course.title}"
+                                onclick="event.stopPropagation(); viewCourse(this.getAttribute('data-id'), this.getAttribute('data-title'))">
+                            <i class="fas fa-eye me-1"></i> View Course Content
+                        </button>
+                        <div class="card-actions-row">
+                            <button type="button" class="btn-edit"
+                                    th:data-id="${course.courseId}"
+                                    th:data-title="${course.title}"
+                                    th:data-semester="${course.semester ?: ''}"
+                                    th:data-credits="${course.credits ?: 0}"
+                                    th:data-description="${course.description ?: ''}"
+                                    onclick="event.stopPropagation(); openUpdate(this.getAttribute('data-id'), this.getAttribute('data-title'), this.getAttribute('data-semester'), this.getAttribute('data-credits'), this.getAttribute('data-description'))">
+                                <i class="fas fa-edit me-1"></i> Edit
+                            </button>
+                            <button type="button"
+                                    th:data-id="${course.courseId}"
+                                    th:data-title="${course.title}"
+                                    onclick="event.stopPropagation(); openAssignInstructor(this.getAttribute('data-id'), this.getAttribute('data-title'))"
+                                    style="background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:6px 12px;font-size:0.74rem;font-weight:700;cursor:pointer;">
+                                <i class="fas fa-chalkboard-teacher me-1"></i> Assign Instructor
+                            </button>
+                            <button type="button" class="btn-del"
+                                    th:data-id="${course.courseId}"
+                                    onclick="event.stopPropagation(); deleteCourse(this.getAttribute('data-id'))">
+                                <i class="fas fa-trash me-1"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div id="courseModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:999; align-items:center; justify-content:center;">
+    <div style="background:var(--card); border:1px solid var(--border); border-radius:16px; padding:32px; width:100%; max-width:520px; position:relative;">
+        <button type="button" onclick="hideForm()" style="position:absolute; top:14px; right:14px; background:none; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer;">
+            <i class="fas fa-times"></i>
+        </button>
+        <h4 class="fw-bold mb-1" id="formTitle" style="color:#fff;">Create New Course</h4>
+        <p style="color:var(--muted); font-size:0.78rem; margin-bottom:20px;">Fill in the details below</p>
+        <form id="courseForm">
+            <input type="hidden" id="f_id">
+            <div class="form-group">
+                <label class="form-label-custom">Course Title *</label>
+                <input class="form-input" id="f_title" placeholder="e.g. Advanced Java Programming" required>
+            </div>
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="form-group">
+                        <label class="form-label-custom">Semester</label>
+                        <input class="form-input" id="f_sem" placeholder="e.g. Fall 2026">
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="form-group">
+                        <label class="form-label-custom">Credits</label>
+                        <input class="form-input" id="f_credits" type="number" placeholder="3" min="0">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label-custom">Description</label>
+                <textarea class="form-input" id="f_desc" rows="3" placeholder="Briefly describe the course objectives…" style="resize:vertical;"></textarea>
+            </div>
+            <div class="d-flex gap-3 pt-2">
+                <button type="submit" class="btn-save"><i class="fas fa-save me-2"></i>Save Course</button>
+                <button type="button" class="btn-cancel" onclick="hideForm()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    function smartToggleSidebar() {
+        if (window.innerWidth <= 992) { toggleSidebar(); } else { collapseSidebar(); }
+    }
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        const ov = document.getElementById('sidebarOverlay');
+        if (ov) ov.style.display = ov.style.display === 'block' ? 'none' : 'block';
+    }
+    function collapseSidebar() {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+        document.getElementById('topbar').classList.toggle('sb-collapsed');
+        document.getElementById('mainArea').classList.toggle('sb-collapsed');
+    }
+    // Apply theme from settings
+    (function applyTheme() {
+        const theme = localStorage.getItem('uiTheme') || 'DARK';
+        const accent = localStorage.getItem('accentColor') || '#2db55d';
+        const r = document.documentElement;
+        r.style.setProperty('--green', accent);
+        r.style.setProperty('--green2', accent);
+        if (theme === 'LIGHT') {
+            r.style.setProperty('--bg', '#f8fafc');
+            r.style.setProperty('--sidebar', '#ffffff');
+            r.style.setProperty('--card', '#ffffff');
+            r.style.setProperty('--card2', '#f1f5f9');
+            r.style.setProperty('--text', '#0f172a');
+            r.style.setProperty('--muted', '#64748b');
+            r.style.setProperty('--border', '#dbeafe');
+        } else if (theme === 'AMOLED') {
+            r.style.setProperty('--bg', '#000');
+            r.style.setProperty('--sidebar', '#000');
+            r.style.setProperty('--card', '#0b0b10');
+            r.style.setProperty('--card2', '#111117');
+            r.style.setProperty('--text', '#f8fafc');
+            r.style.setProperty('--muted', '#94a3b8');
+            r.style.setProperty('--border', '#1f2937');
+        }
+    })();
+
+    const token = localStorage.getItem('token');
+    const role  = localStorage.getItem('role');
+    const name  = localStorage.getItem('name') || 'Admin';
+    if (!token || role !== 'ADMIN') window.location.href = '/login';
+
+    document.getElementById('sidebarName').textContent   = name;
+    document.getElementById('sidebarAvatar').textContent = name.charAt(0).toUpperCase();
+
+    const AUTH = { 'Content-Type':'application/x-www-form-urlencoded', 'Authorization':'Bearer ' + token };
+
+    /* Count */
+    document.addEventListener('DOMContentLoaded', () => {
+        updateCounter();
+    });
+
+    function updateCounter() {
+        const visible = [...document.querySelectorAll('.course-item')].filter(el => el.style.display !== 'none').length;
+        document.getElementById('courseCounter').textContent = visible + ' Course' + (visible !== 1 ? 's' : '');
+    }
+
+    /* Filter */
+    function filterCards(q) {
+        q = (q || '').toLowerCase();
+        document.querySelectorAll('.course-item').forEach(el => {
+            const title = (el.dataset.title || '').toLowerCase();
+            el.style.display = title.includes(q) ? '' : 'none';
+        });
+        updateCounter();
+    }
+
+    function filterByStatus(status) {
+        document.querySelectorAll('.course-item').forEach(el => {
+            const s = (el.dataset.status || '').toUpperCase();
+            el.style.display = (!status || s === status) ? '' : 'none';
+        });
+        updateCounter();
+    }
+
+    /* Form show/hide handlers */
+    function showForm() {
+        document.getElementById('courseModal').style.display = 'flex';
+        document.getElementById('formTitle').textContent = 'Create New Course';
+        ['f_id','f_title','f_sem','f_credits','f_desc'].forEach(id => document.getElementById(id).value = '');
+    }
+    
+    function hideForm() {
+        document.getElementById('courseModal').style.display = 'none';
+    }
+    
+    function openUpdate(id, title, semester, credits, description) {
+        document.getElementById('courseModal').style.display = 'flex';
+        document.getElementById('formTitle').textContent = 'Update Course';
+        document.getElementById('f_id').value      = id          || '';
+        document.getElementById('f_title').value   = title       || '';
+        document.getElementById('f_sem').value     = semester    || '';
+        document.getElementById('f_credits').value = credits     || '0';
+        document.getElementById('f_desc').value    = description || '';
+    }
+
+    /* Redirects cleanly to backend controller mapped view structure */
+    function viewCourse(courseId, title) {
+        window.location.href = '/web/admin/courses/content?courseId=' + courseId + '&title=' + encodeURIComponent(title);
+    }
+
+    /* Form AJAX Submission */
+    document.getElementById('courseForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const id = document.getElementById('f_id').value;
+        const fd = new URLSearchParams();
+        if (id) fd.append('courseId', id);
+        fd.append('title',       document.getElementById('f_title').value.trim());
+        fd.append('description', document.getElementById('f_desc').value.trim());
+        fd.append('semester',    document.getElementById('f_sem').value.trim());
+        fd.append('credits',     document.getElementById('f_credits').value || 0);
+        
+        const res = await fetch('/web/admin/courses/save', { method:'POST', headers:AUTH, body:fd.toString() });
+        if (!res.ok) { alert('Failed to save course'); return; }
+        window.location.reload();
+    });
+
+    /* Delete handling */
+    async function deleteCourse(id) {
+        if (!id || !confirm('Delete this course?')) return;
+        const res = await fetch('/web/admin/courses/delete/' + id, { method:'GET', headers:AUTH });
+        if (!res.ok) { alert('Failed to delete'); return; }
+        window.location.reload();
+    }
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        const ov = document.getElementById('sidebarOverlay');
+        ov.style.display = ov.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function toggleNavSection(labelEl) {
+        const icon = labelEl.querySelector('i');
+        const collapse = !labelEl.classList.contains('collapsed');
+        labelEl.classList.toggle('collapsed', collapse);
+        if (icon) icon.style.transform = collapse ? 'rotate(-90deg)' : 'rotate(0deg)';
+
+        let next = labelEl.nextElementSibling;
+        while (next && !next.classList.contains('nav-section-label')) {
+            next.style.display = collapse ? 'none' : 'flex';
+            next = next.nextElementSibling;
+        }
+    }
+    
+    function logout() { localStorage.clear(); window.location.href = '/login'; }
+
+    /* ─── Assign Instructor ─── */
+    let _assignCourseId = null;
+
+    async function openAssignInstructor(courseId, title) {
+        _assignCourseId = courseId;
+        document.getElementById('assignCourseLabel').textContent = title + ' (#' + courseId + ')';
+        document.getElementById('assignMsg').innerHTML = '';
+
+        const sel = document.getElementById('instructorSelect');
+        sel.innerHTML = '<option value="">Loading…</option>';
+        try {
+            const res = await fetch('/api/instructor/all', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const list = res.ok ? await res.json() : [];
+            if (!list.length) {
+                sel.innerHTML = '<option value="">No instructors registered yet</option>';
+            } else {
+                sel.innerHTML = '<option value="">Select an instructor…</option>' +
+                    list.map(i => `<option value="${i.instructorId}">${i.name} (${i.email})</option>`).join('');
+            }
+        } catch(_) {
+            sel.innerHTML = '<option value="">Failed to load instructors</option>';
+        }
+        document.getElementById('assignModal').style.display = 'flex';
+    }
+
+    function hideAssignModal() {
+        document.getElementById('assignModal').style.display = 'none';
+    }
+
+    /* ─── Create Instructor ─── */
+    function openCreateInstructor() {
+        document.getElementById('createInstructorForm').reset();
+        document.getElementById('ciMsg').innerHTML = '';
+        document.getElementById('createInstructorModal').style.display = 'flex';
+    }
+    function hideCreateInstructor() {
+        document.getElementById('createInstructorModal').style.display = 'none';
+    }
+
+    /* Wire up form submit handlers AFTER DOM is fully loaded */
+    document.addEventListener('DOMContentLoaded', function() {
+
+        document.getElementById('assignInstructorForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const instructorId = document.getElementById('instructorSelect').value;
+            const msgEl = document.getElementById('assignMsg');
+            if (!instructorId) { msgEl.innerHTML = '<div style="color:var(--red);font-size:0.8rem;">Please select an instructor.</div>'; return; }
+
+            const res = await fetch('/api/instructor/assign-course', {
+                method:  'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ courseId: _assignCourseId, instructorId: parseInt(instructorId) })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                msgEl.innerHTML = `<div style="color:var(--red);font-size:0.8rem;">${data.error || 'Failed to assign'}</div>`;
+            } else {
+                msgEl.innerHTML = `<div style="color:var(--green);font-size:0.8rem;"><i class="fas fa-check me-1"></i>${data.message || 'Instructor assigned successfully!'}</div>`;
+                setTimeout(hideAssignModal, 1500);
+            }
+        });
+
+        document.getElementById('createInstructorForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const msgEl = document.getElementById('ciMsg');
+            msgEl.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;"><i class="fas fa-spinner fa-spin me-1"></i>Creating…</div>';
+
+            const payload = {
+                name:     document.getElementById('ci_name').value.trim(),
+                email:    document.getElementById('ci_email').value.trim(),
+                phone:    document.getElementById('ci_phone').value.trim(),
+                program:  document.getElementById('ci_program').value.trim() || 'Instructor',
+                password: document.getElementById('ci_password').value
+            };
+
+            const res = await fetch('/api/instructor/register', {
+                method:  'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                msgEl.innerHTML = `<div style="color:var(--red);font-size:0.8rem;"><i class="fas fa-times me-1"></i>${data.error || 'Registration failed'}</div>`;
+            } else {
+                msgEl.innerHTML = `<div style="color:var(--green);font-size:0.8rem;"><i class="fas fa-check me-1"></i>Instructor <strong>${data.name}</strong> created! (ID: ${data.instructorId})</div>`;
+                document.getElementById('createInstructorForm').reset();
+                setTimeout(hideCreateInstructor, 2000);
+            }
+        });
+
+    }); /* end DOMContentLoaded */
+</script>
+
+<!-- Assign Instructor Modal -->
+<div id="assignModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--card); border:1px solid var(--border); border-radius:16px; padding:32px; width:100%; max-width:460px; position:relative;">
+        <button type="button" onclick="hideAssignModal()" style="position:absolute; top:14px; right:14px; background:none; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer;"><i class="fas fa-times"></i></button>
+        <h5 class="fw-bold mb-1" style="color:#fff;"><i class="fas fa-chalkboard-teacher me-2" style="color:var(--orange);"></i>Assign Instructor</h5>
+        <p style="color:var(--muted);font-size:0.78rem;margin-bottom:18px;">Course: <strong id="assignCourseLabel" style="color:#fff;"></strong></p>
+        <form id="assignInstructorForm">
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:6px;">Select Instructor</label>
+                <select id="instructorSelect" style="width:100%;background:var(--card2);border:1px solid var(--border);color:#fff;border-radius:9px;padding:10px 14px;font-size:0.84rem;outline:none;">
+                    <option value="">Select an instructor…</option>
+                </select>
+            </div>
+            <div id="assignMsg" class="mb-2"></div>
+            <div class="d-flex gap-3">
+                <button type="submit" style="background:linear-gradient(135deg,var(--orange),#b45309);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-weight:700;font-size:0.84rem;cursor:pointer;">
+                    <i class="fas fa-save me-2"></i>Assign
+                </button>
+                <button type="button" onclick="hideAssignModal()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:10px 20px;font-weight:600;font-size:0.84rem;cursor:pointer;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Create Instructor Modal -->
+<div id="createInstructorModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1001; align-items:center; justify-content:center;">
+    <div style="background:var(--card); border:1px solid var(--border); border-radius:16px; padding:32px; width:100%; max-width:480px; position:relative;">
+        <button type="button" onclick="hideCreateInstructor()" style="position:absolute; top:14px; right:14px; background:none; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer;"><i class="fas fa-times"></i></button>
+        <h5 class="fw-bold mb-1" style="color:#fff;"><i class="fas fa-user-plus me-2" style="color:var(--orange);"></i>Create Instructor Account</h5>
+        <p style="color:var(--muted);font-size:0.78rem;margin-bottom:20px;">New instructor will be able to log in and manage attendance.</p>
+        <form id="createInstructorForm">
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:5px;">Full Name *</label>
+                <input id="ci_name" type="text" required placeholder="e.g. Dr. Jane Smith"
+                       style="width:100%;background:var(--card2);border:1px solid var(--border);color:#fff;border-radius:9px;padding:9px 14px;font-size:0.84rem;outline:none;">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:5px;">Email *</label>
+                <input id="ci_email" type="email" required placeholder="instructor@example.com"
+                       style="width:100%;background:var(--card2);border:1px solid var(--border);color:#fff;border-radius:9px;padding:9px 14px;font-size:0.84rem;outline:none;">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:5px;">Phone * <span style="font-weight:400;color:var(--muted);">(exactly 10 digits)</span></label>
+                <input id="ci_phone" type="tel" required placeholder="e.g. 9876543210"
+                       maxlength="10" minlength="10" pattern="[0-9]{10}"
+                       oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                       style="width:100%;background:var(--card2);border:1px solid var(--border);color:#fff;border-radius:9px;padding:9px 14px;font-size:0.84rem;outline:none;letter-spacing:2px;">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:5px;">Department / Program</label>
+                <input id="ci_program" type="text" placeholder="e.g. Computer Science"
+                       style="width:100%;background:var(--card2);border:1px solid var(--border);color:#fff;border-radius:9px;padding:9px 14px;font-size:0.84rem;outline:none;">
+            </div>
+            <div style="margin-bottom:18px;">
+                <label style="display:block;font-size:0.78rem;color:var(--muted);font-weight:600;margin-bottom:5px;">Password * <span style="font-weight:400;color:var(--muted);">(min 6 characters)</span></label>
+                <input id="ci_password" type="password" required placeholder="At least 6 characters" minlength="6"
+                       style="width:100%;background:var(--card2);border:1px solid var(--border);color:#fff;border-radius:9px;padding:9px 14px;font-size:0.84rem;outline:none;">
+            </div>
+            <div id="ciMsg" class="mb-2"></div>
+            <div class="d-flex gap-3">
+                <button type="submit" style="background:linear-gradient(135deg,var(--orange),#b45309);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-weight:700;font-size:0.84rem;cursor:pointer;">
+                    <i class="fas fa-user-plus me-2"></i>Create Instructor
+                </button>
+                <button type="button" onclick="hideCreateInstructor()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:10px 20px;font-weight:600;font-size:0.84rem;cursor:pointer;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assignment Status Modal -->
+<div id="assignmentStatusModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1002; align-items:center; justify-content:center;">
+    <div style="background:var(--card); border:1px solid var(--border); border-radius:16px; padding:32px; width:100%; max-width:720px; position:relative; max-height:85vh; overflow-y:auto;">
+        <button type="button" onclick="closeAssignmentStatusModal()" style="position:absolute; top:14px; right:14px; background:none; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer;"><i class="fas fa-times"></i></button>
+        <h5 class="fw-bold mb-1" style="color:#fff;"><i class="fas fa-tasks me-2" style="color:var(--purple);"></i>Instructor Assignment Status</h5>
+        <p style="color:var(--muted);font-size:0.78rem;margin-bottom:18px;">View pending, accepted or rejected course assignments by instructors.</p>
+
+        <!-- Filter Tabs -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+            <button onclick="filterAssignments('all')" id="tab_all" class="as-tab as-tab-active">All</button>
+            <button onclick="filterAssignments('PENDING')" id="tab_PENDING" class="as-tab">⏳ Pending</button>
+            <button onclick="filterAssignments('ACCEPTED')" id="tab_ACCEPTED" class="as-tab">✅ Accepted</button>
+            <button onclick="filterAssignments('REJECTED')" id="tab_REJECTED" class="as-tab">❌ Rejected</button>
+        </div>
+
+        <div id="assignmentStatusList">
+            <div style="text-align:center;padding:40px 20px;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.as-tab { padding:6px 16px; border-radius:8px; border:1px solid var(--border); background:var(--card2); color:var(--muted); font-size:0.78rem; font-weight:600; cursor:pointer; transition:0.2s; }
+.as-tab:hover { border-color:#555; color:#fff; }
+.as-tab.as-tab-active { background:var(--purple); color:#fff; border-color:var(--purple); }
+.as-row { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:10px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.as-pill { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.7rem; font-weight:700; text-transform:uppercase; }
+.as-pill.PENDING  { background:rgba(245,158,11,0.15); color:var(--orange); }
+.as-pill.ACCEPTED { background:rgba(45,181,93,0.15);  color:var(--green); }
+.as-pill.REJECTED { background:rgba(239,68,68,0.15);  color:var(--red); }
+</style>
+
+<script>
+let _allAssignments = [];
+let _currentFilter  = 'all';
+
+async function openAssignmentStatusModal() {
+    document.getElementById('assignmentStatusModal').style.display = 'flex';
+    document.getElementById('assignmentStatusList').innerHTML =
+        '<div style="text-align:center;padding:40px 20px;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
+    try {
+        const res = await fetch('/api/instructor/assignments/all', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        _allAssignments = res.ok ? await res.json() : [];
+    } catch(_) { _allAssignments = []; }
+    filterAssignments('all');
+}
+
+function closeAssignmentStatusModal() {
+    document.getElementById('assignmentStatusModal').style.display = 'none';
+}
+
+function filterAssignments(filter) {
+    _currentFilter = filter;
+    // Update tab styles
+    ['all', 'PENDING', 'ACCEPTED', 'REJECTED'].forEach(f => {
+        const t = document.getElementById('tab_' + f);
+        if (t) t.classList.toggle('as-tab-active', f === filter);
+    });
+
+    const list = filter === 'all'
+        ? _allAssignments
+        : _allAssignments.filter(a => a.assignmentStatus === filter);
+
+    const el = document.getElementById('assignmentStatusList');
+    if (!list.length) {
+        el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted);"><i class="fas fa-inbox" style="font-size:2rem;display:block;margin-bottom:12px;"></i>No assignments found.</div>`;
+        return;
+    }
+    el.innerHTML = list.map(a => `
+        <div class="as-row">
+            <div style="background:rgba(139,92,246,0.12);color:var(--purple);border-radius:8px;padding:3px 10px;font-size:0.72rem;font-weight:700;">#${a.courseId}</div>
+            <div style="flex:1;min-width:120px;">
+                <div style="font-weight:700;color:#fff;font-size:0.9rem;">${escHtml(a.title||'–')}</div>
+                <div style="font-size:0.72rem;color:var(--muted);">${escHtml(a.semester||'–')}</div>
+            </div>
+            <div style="min-width:140px;">
+                <div style="font-size:0.75rem;color:var(--muted);font-weight:600;">Instructor</div>
+                <div style="font-size:0.84rem;color:#fff;">${escHtml(a.instructorName||'–')}</div>
+                <div style="font-size:0.7rem;color:var(--muted);">ID: ${a.instructorId||'–'}</div>
+            </div>
+            <span class="as-pill ${a.assignmentStatus||''}">${a.assignmentStatus||'–'}</span>
+        </div>`).join('');
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+
+</body>
+</html>

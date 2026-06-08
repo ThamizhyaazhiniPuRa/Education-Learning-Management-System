@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>ELMS – My Profile</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root { --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26; --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6; --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+
+        /* Sidebar */
+        .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:300; transition:width 0.3s,transform 0.3s; }
+        .sidebar.collapsed { width:64px; }
+        .sidebar.collapsed .brand-sub,.sidebar.collapsed .nav-label-text,.sidebar.collapsed .nav-section-label,.sidebar.collapsed .stu-name,.sidebar.collapsed .stu-role { display:none; }
+        .sidebar.collapsed .nav-item { justify-content:center; padding:11px 0; }
+        .sidebar.collapsed .nav-item i { width:auto; margin:0; }
+        .sidebar.collapsed .stu-card { justify-content:center; padding:10px; }
+        .sidebar-header { padding:18px 14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+        .sidebar-toggle { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:5px 7px; border-radius:7px; transition:0.2s; flex-shrink:0; margin-left:auto; }
+        .sidebar-toggle:hover { color:#fff; background:rgba(255,255,255,0.07); }
+        .brand { font-size:1.4rem; font-weight:900; color:#fff; } .brand span { color:var(--green); }
+        .brand-sub { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+        .nav-section-label { color:#4a4a6a; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; padding:12px 8px 5px; margin-top:8px; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:0.86rem; font-weight:500; transition:all 0.2s; margin-bottom:2px; position:relative; cursor:pointer; border:none; background:transparent; width:100%; }
+        .nav-item i { width:18px; text-align:center; font-size:0.9rem; flex-shrink:0; }
+        .nav-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-item.active { color:#fff; background:linear-gradient(135deg,rgba(45,181,93,0.2),rgba(45,181,93,0.04)); }
+        .nav-item.active i { color:var(--green); }
+        .nav-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--green); border-radius:0 3px 3px 0; }
+        .nav-item.logout { color:var(--red); } .nav-item.logout:hover { background:rgba(239,68,68,0.08); }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .stu-card { background:var(--card); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .stu-avatar { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--blue),#1d4ed8); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; flex-shrink:0; }
+        .stu-name { font-weight:600; font-size:0.82rem; color:#fff; } .stu-role { font-size:0.7rem; color:var(--muted); }
+        .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:299; }
+
+        /* Topbar */
+        .topbar { position:fixed; top:0; left:240px; right:0; height:64px; background:rgba(15,15,19,0.97); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200; transition:left 0.3s; }
+        .topbar.sb-collapsed { left:64px; }
+        .topbar-title { font-weight:700; font-size:1.1rem; flex:1; }
+        .topbar-title span { color:var(--muted); font-weight:400; font-size:0.82rem; margin-left:8px; }
+        .icon-btn { width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; transition:0.2s; text-decoration:none; position:relative; }
+        .icon-btn:hover { border-color:#888; background:rgba(255,255,255,0.12); }
+        .sidebar.collapsed .nav-item i { color:#fff !important; font-size:0.95rem; }
+        .icon-btn i[class*="fa-bell"]   { color:var(--orange) !important; font-size:1rem; }
+        .icon-btn i[class*="fa-user"]   { color:var(--green)  !important; font-size:1rem; }
+        .icon-btn i[class*="fa-shield"] { color:var(--green)  !important; font-size:1rem; }
+        .icon-btn i[class*="fa-bars"]   { color:#fff          !important; font-size:1rem; }
+        .notif-dot { position:absolute; top:7px; right:7px; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid var(--bg); }
+        .notif-dropdown { position:absolute; top:50px; right:0; width:280px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .notif-dropdown.show { display:block; }
+        .notif-header { padding:12px 16px; border-bottom:1px solid var(--border); font-weight:700; font-size:0.84rem; }
+        .notif-item { padding:10px 16px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:10px; }
+        .notif-item:last-child { border-bottom:none; }
+        .notif-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; flex-shrink:0; }
+        .notif-text { font-size:0.76rem; line-height:1.5; }
+        .notif-time { font-size:0.68rem; color:var(--muted); margin-top:2px; }
+        .profile-ddrop { position:absolute; top:50px; right:0; width:220px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .profile-ddrop.show { display:block; }
+        .profile-ddrop-header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+        .pmenu-item { display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--muted); font-size:0.83rem; font-weight:500; text-decoration:none; cursor:pointer; transition:0.18s; background:none; border:none; width:100%; text-align:left; }
+        .pmenu-item i { width:16px; text-align:center; }
+        .pmenu-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .pmenu-item.danger { color:var(--red); }
+        .pmenu-item.danger:hover { background:rgba(239,68,68,0.08); }
+        .pmenu-sep { border:none; border-top:1px solid var(--border); margin:4px 0; }
+
+        /* Main */
+        .main { margin-left:240px; margin-top:64px; padding:28px; transition:margin-left 0.3s; }
+        .main.sb-collapsed { margin-left:64px; }
+
+        /* Profile hero */
+        .profile-hero { background:linear-gradient(135deg,#071a2a,var(--card)); border:1px solid var(--border); border-radius:20px; padding:30px 32px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; margin-bottom:24px; position:relative; overflow:hidden; }
+        .profile-hero::before { content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; border-radius:50%; background:var(--blue); opacity:0.04; }
+        .big-stu-avatar { width:84px; height:84px; border-radius:20px; background:linear-gradient(135deg,var(--blue),#1d4ed8); display:flex; align-items:center; justify-content:center; font-size:2.4rem; font-weight:900; color:#fff; flex-shrink:0; box-shadow:0 8px 24px rgba(59,130,246,0.3); }
+        .profile-tag { background:rgba(59,130,246,0.1); color:var(--blue); border:1px solid rgba(59,130,246,0.2); border-radius:8px; padding:4px 14px; font-size:0.74rem; font-weight:700; display:inline-block; margin-right:6px; margin-top:6px; }
+
+        /* Info card */
+        .info-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px; margin-bottom:20px; }
+        .info-card-title { font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+        .info-row { display:flex; align-items:flex-start; gap:14px; padding:12px 0; border-bottom:1px solid var(--border); }
+        .info-row:last-child { border-bottom:none; }
+        .info-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:0.82rem; flex-shrink:0; }
+        .info-label { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:2px; }
+        .info-value { font-size:0.9rem; font-weight:600; color:#fff; }
+
+        /* Summary boxes */
+        .sum-box { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:center; transition:border-color 0.2s; }
+        .sum-box:hover { border-color:#3a3a5a; }
+        .sum-val { font-size:1.5rem; font-weight:900; color:var(--green); }
+        .sum-lbl { font-size:0.7rem; color:var(--muted); text-transform:uppercase; font-weight:600; margin-top:3px; }
+
+        /* Quick links */
+        .quick-link { display:flex; align-items:center; gap:10px; padding:11px 14px; background:var(--card2); border:1px solid var(--border); border-radius:10px; text-decoration:none; color:var(--muted); font-size:0.84rem; font-weight:500; transition:all 0.2s; margin-bottom:8px; }
+        .quick-link:hover { color:#fff; border-color:#3a3a5a; background:rgba(255,255,255,0.04); }
+        .quick-link i { width:16px; text-align:center; }
+
+        /* Danger zone */
+        .danger-zone { background:rgba(239,68,68,0.04); border:1px solid rgba(239,68,68,0.15); border-radius:14px; padding:20px; }
+        .danger-zone h6 { color:var(--red); font-weight:700; margin-bottom:10px; }
+        .btn-logout { background:var(--red); color:#fff; border:none; border-radius:9px; padding:10px; width:100%; font-weight:700; font-size:0.88rem; cursor:pointer; transition:opacity 0.2s; }
+        .btn-logout:hover { opacity:0.85; }
+
+        /* Token box */
+        .token-box { background:var(--card2); border:1px solid var(--border); border-radius:9px; padding:10px 14px; font-family:monospace; font-size:0.72rem; color:#4a4a6a; word-break:break-all; margin-top:8px; }
+
+        /* State box */
+        .state-box { background:var(--card); border:1px dashed var(--border); border-radius:14px; padding:40px 20px; text-align:center; color:var(--muted); }
+        .state-box i { font-size:2rem; color:#2a2a3a; display:block; margin-bottom:12px; }
+
+        .hamburger { display:flex; }
+        @media (max-width:992px) { .sidebar { transform:translateX(-100%); width:240px !important; } .sidebar.open { transform:translateX(0); } .sidebar-overlay.show { display:block; } .main, .topbar { margin-left:0 !important; left:0 !important; } }
+        @media (max-width:768px) { .main { padding:16px; } }
+    </style>
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- ══ SIDEBAR ══ -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div><div class="brand">ELM<span>S</span></div><div class="brand-sub">Learning Management</div></div>
+        <button class="sidebar-toggle" onclick="collapseSidebar()" title="Collapse"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a href="/student/dashboard"  class="nav-item"><i class="fas fa-chart-pie"></i><span class="nav-label-text"> Dashboard</span></a>
+        <a href="/student/courses"    class="nav-item"><i class="fas fa-book-open"></i><span class="nav-label-text"> My Courses</span></a>
+        <div class="nav-section-label">Academics</div>
+        <a href="/student/attendance" class="nav-item"><i class="fas fa-calendar-check"></i><span class="nav-label-text"> Attendance</span></a>
+        <a href="/student/grades"     class="nav-item"><i class="fas fa-star"></i><span class="nav-label-text"> Grades</span></a>
+        <a href="/student/analytics"  class="nav-item"><i class="fas fa-chart-bar"></i><span class="nav-label-text"> My Analytics</span></a>
+        <div class="nav-section-label">Account</div>
+        <a href="/student/profile"    class="nav-item active"><i class="fas fa-user-circle"></i><span class="nav-label-text"> Profile</span></a>
+        <button class="nav-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span class="nav-label-text"> Logout</span></button>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="stu-card">
+            <div class="stu-avatar" id="sidebarAvatar">S</div>
+            <div><div class="stu-name" id="sidebarName">Student</div><div class="stu-role">Student</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ TOPBAR ══ -->
+<div class="topbar" id="topbar">
+    <button class="icon-btn hamburger me-2" onclick="smartToggleSidebar()" title="Toggle Sidebar"><i class="fas fa-bars" style="color:#fff;font-size:1rem;"></i></button>
+    <div class="topbar-title">My Profile <span>/ Account</span></div>
+    <div style="position:relative;">
+        <div class="icon-btn" onclick="toggleNotif(event)"><i class="fas fa-bell" style="color:#f59e0b;font-size:1rem;"></i><div class="notif-dot"></div></div>
+        <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header"><i class="fas fa-bell me-2" style="color:var(--orange);"></i>Notifications</div>
+            <div class="notif-item"><div class="notif-icon" style="background:rgba(59,130,246,0.15);color:var(--blue);"><i class="fas fa-book-open"></i></div><div><div class="notif-text">New assignment available.</div><div class="notif-time"><i class="fas fa-clock me-1"></i>Just now</div></div></div>
+        </div>
+    </div>
+    <div style="position:relative;">
+        <div class="icon-btn" onclick="toggleProfileMenu(event)"><i class="fas fa-user-circle" style="color:#2db55d;font-size:1rem;"></i></div>
+        <div class="profile-ddrop" id="profileDropdown">
+            <div class="profile-ddrop-header"><div class="stu-avatar" id="profileMenuAvatar" style="width:32px;height:32px;font-size:0.85rem;">S</div><div><div style="font-weight:700;font-size:0.83rem;color:#fff;" id="profileMenuName">Student</div><div style="font-size:0.7rem;color:var(--green);">Student Account</div></div></div>
+            <a href="/student/profile"    class="pmenu-item"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="/student/grades"     class="pmenu-item"><i class="fas fa-star"></i> My Grades</a>
+            <a href="/student/attendance" class="pmenu-item"><i class="fas fa-calendar-check"></i> Attendance</a>
+            <a href="/student/courses"    class="pmenu-item"><i class="fas fa-book-open"></i> My Courses</a>
+            <hr class="pmenu-sep">
+            <button class="pmenu-item danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="main" id="mainContent">
+    <h4 class="fw-bold mb-4"><i class="fas fa-user-circle me-2" style="color:var(--blue);"></i>My Profile</h4>
+
+    <!-- Profile Hero -->
+    <div class="profile-hero">
+        <div class="big-stu-avatar" id="bigAvatar">S</div>
+        <div>
+            <div style="font-size:1.6rem; font-weight:800;" id="heroName">Student</div>
+            <div style="color:var(--muted); font-size:0.84rem; margin-top:4px;">ELMS Platform · Student</div>
+            <div style="margin-top:10px;">
+                <span class="profile-tag"><i class="fas fa-user-graduate me-1"></i>STUDENT</span>
+                <span class="profile-tag" id="heroProgram">–</span>
+                <span class="profile-tag" id="heroStatusTag" style="background:rgba(45,181,93,0.1); color:var(--green); border-color:rgba(45,181,93,0.2);">
+                    <i class="fas fa-circle me-1" style="font-size:0.5rem; vertical-align:middle;"></i>Active
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+
+        <!-- LEFT: Account Info -->
+        <div class="col-lg-7">
+            <div class="info-card">
+                <div class="info-card-title">
+                    <i class="fas fa-id-card" style="color:var(--green);"></i> Account Information
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(45,181,93,0.1); color:var(--green);"><i class="fas fa-user"></i></div>
+                    <div><div class="info-label">Full Name</div><div class="info-value" id="pName">–</div></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(59,130,246,0.1); color:var(--blue);"><i class="fas fa-envelope"></i></div>
+                    <div><div class="info-label">Email Address</div><div class="info-value" id="pEmail">–</div></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(139,92,246,0.1); color:var(--purple);"><i class="fas fa-graduation-cap"></i></div>
+                    <div><div class="info-label">Program</div><div class="info-value" id="pProgram">–</div></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(245,158,11,0.1); color:var(--orange);"><i class="fas fa-phone"></i></div>
+                    <div><div class="info-label">Phone Number</div><div class="info-value" id="pPhone">–</div></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(6,182,212,0.1); color:var(--cyan);"><i class="fas fa-id-badge"></i></div>
+                    <div><div class="info-label">Student ID</div><div class="info-value" id="pId">–</div></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(251,191,36,0.1); color:var(--yellow, #fbbf24);"><i class="fas fa-shield-alt"></i></div>
+                    <div>
+                        <div class="info-label">Role</div>
+                        <div class="info-value">STUDENT</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(45,181,93,0.1); color:var(--green);"><i class="fas fa-user-tag"></i></div>
+                    <div>
+                        <div class="info-label">Account Status</div>
+                        <div class="info-value" id="pStatus">–</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon" style="background:rgba(156,163,175,0.1); color:var(--muted);"><i class="fas fa-key"></i></div>
+                    <div style="flex:1;">
+                        <div class="info-label">Session Token</div>
+                        <div class="token-box" id="pToken">–</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Summary + Quick Links + Danger Zone -->
+        <div class="col-lg-5">
+
+            <!-- Academic Summary -->
+            <div class="info-card mb-3">
+                <div class="info-card-title">
+                    <i class="fas fa-chart-pie" style="color:var(--green);"></i> Academic Summary
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="sum-box">
+                            <div class="sum-val" id="sEnrolled">–</div>
+                            <div class="sum-lbl">Courses</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="sum-box">
+                            <div class="sum-val" style="color:var(--blue);" id="sSubmitted">–</div>
+                            <div class="sum-lbl">Submitted</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="sum-box">
+                            <div class="sum-val" style="color:var(--orange);" id="sPending">–</div>
+                            <div class="sum-lbl">Pending</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="sum-box">
+                            <div class="sum-val" style="color:var(--cyan);" id="sAtt">–</div>
+                            <div class="sum-lbl">Attendance</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="info-card mb-3">
+                <div class="info-card-title">
+                    <i class="fas fa-link" style="color:var(--blue);"></i> Quick Links
+                </div>
+                <a href="/student/dashboard"   class="quick-link"><i class="fas fa-chart-pie"     style="color:var(--green);"></i> Dashboard</a>
+                <a href="/student/courses"     class="quick-link"><i class="fas fa-book-open"     style="color:var(--blue);"></i> My Courses</a>
+                <a href="/student/attendance"  class="quick-link"><i class="fas fa-calendar-check" style="color:var(--cyan);"></i> Attendance</a>
+                <a href="/student/grades"      class="quick-link"><i class="fas fa-star"           style="color:var(--yellow, #fbbf24);"></i> Grades</a>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="danger-zone">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Session</h6>
+                <p style="color:var(--muted); font-size:0.82rem; margin-bottom:14px;">
+                    Logging out will clear your session and return you to the login page.
+                </p>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    /* ── Auth ── */
+    const token      = localStorage.getItem('token');
+    const role       = localStorage.getItem('role');
+    const stuName    = localStorage.getItem('name')    || 'Student';
+    const stuEmail   = localStorage.getItem('email')   || '—';
+    const stuPhone   = localStorage.getItem('phone')   || '—';
+    const stuProgram = localStorage.getItem('program') || '—';
+    const studentId  = parseInt(localStorage.getItem('studentId') || '0');
+
+    if (!token || role !== 'STUDENT') window.location.href = '/login';
+
+    const AUTH = { 'Authorization': 'Bearer ' + token };
+
+    function smartToggleSidebar(){ if(window.innerWidth<=992){toggleSidebar();}else{collapseSidebar();} }
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('show');
+    }
+    function logout() { localStorage.clear(); window.location.href = '/login'; }
+    async function apiFetch(url) {
+        try { const r = await fetch(url, { headers: AUTH }); return r.ok ? await r.json() : null; } catch(_) { return null; }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        /* ── Identity ── */
+        const initial = stuName.charAt(0).toUpperCase();
+        document.getElementById('sidebarAvatar').textContent = initial;
+        document.getElementById('sidebarName').textContent   = stuName;
+        document.getElementById('bigAvatar').textContent     = initial;
+        document.getElementById('heroName').textContent      = stuName;
+        document.getElementById('heroProgram').textContent   = stuProgram || '–';
+        document.getElementById('pName').textContent         = stuName;
+        document.getElementById('pEmail').textContent        = stuEmail;
+        document.getElementById('pProgram').textContent      = stuProgram;
+        document.getElementById('pPhone').textContent        = stuPhone;
+        document.getElementById('pId').textContent           = '#' + studentId;
+        document.getElementById('pToken').textContent        = token ? token.substring(0, 60) + '…' : '–';
+
+        /* ── Academic Summary ── */
+        const [enrolledCourses, subs, studentData] = await Promise.all([
+            apiFetch(`/api/students/${studentId}/courses`),
+            apiFetch(`/api/students/${studentId}/submissions`),
+            apiFetch(`/api/students/${studentId}`)
+        ]);
+
+        /* Show student status */
+        if (studentData && studentData.status) {
+            const st = studentData.status;
+            const stColor  = st === 'ACTIVE'    ? 'var(--green)' : st === 'GRADUATED' ? 'var(--blue)' : 'var(--red)';
+            const stBg     = st === 'ACTIVE'    ? 'rgba(45,181,93,0.1)' : st === 'GRADUATED' ? 'rgba(59,130,246,0.1)' : 'rgba(239,68,68,0.1)';
+            const stBorder = st === 'ACTIVE'    ? 'rgba(45,181,93,0.2)' : st === 'GRADUATED' ? 'rgba(59,130,246,0.2)' : 'rgba(239,68,68,0.2)';
+            const stIcon   = st === 'ACTIVE'    ? 'fa-circle' : st === 'GRADUATED' ? 'fa-graduation-cap' : 'fa-user-times';
+            const stLabel  = st === 'ACTIVE'    ? 'Active' : st === 'GRADUATED' ? 'Graduated 🎓' : 'Dropped';
+
+            // Hero tag
+            const heroTag = document.getElementById('heroStatusTag');
+            if (heroTag) {
+                heroTag.style.background   = stBg;
+                heroTag.style.color        = stColor;
+                heroTag.style.borderColor  = stBorder;
+                heroTag.innerHTML = `<i class="fas ${stIcon} me-1" style="font-size:0.62rem;vertical-align:middle;"></i>${stLabel}`;
+            }
+
+            // Info row badge
+            const pStatusEl = document.getElementById('pStatus');
+            if (pStatusEl) {
+                pStatusEl.innerHTML = `<span style="background:${stBg};color:${stColor};border:1px solid ${stBorder};border-radius:8px;padding:3px 12px;font-size:0.8rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+                    <i class="fas ${stIcon}" style="font-size:0.65rem;"></i>${stLabel}
+                </span>`;
+            }
+
+            // Show warning banner for non-active students
+            if (st !== 'ACTIVE') {
+                const bannerColor = st === 'GRADUATED' ? '#3b82f6' : '#ef4444';
+                const bannerBg    = st === 'GRADUATED' ? 'rgba(59,130,246,0.08)' : 'rgba(239,68,68,0.08)';
+                const bannerMsg   = st === 'GRADUATED'
+                    ? 'Congratulations! You have successfully graduated from this program.'
+                    : 'Your enrollment has been dropped. Please contact administration.';
+                const banner = document.createElement('div');
+                banner.style.cssText = `background:${bannerBg};border:1px solid ${bannerColor}33;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;`;
+                banner.innerHTML = `<i class="fas ${stIcon}" style="color:${bannerColor};font-size:1.4rem;flex-shrink:0;"></i>
+                    <div><div style="color:${bannerColor};font-weight:700;font-size:0.9rem;">${stLabel} Account</div>
+                    <div style="color:var(--muted);font-size:0.8rem;margin-top:2px;">${bannerMsg}</div></div>`;
+                const main = document.querySelector('.main');
+                const hero = document.querySelector('.profile-hero');
+                if (main && hero) main.insertBefore(banner, hero);
+            }
+        }
+
+        const enrolledIds = new Set((enrolledCourses || []).map(c => c.courseId));
+
+        /* Load assignments for all enrolled courses */
+        let assigns = [];
+        for (const cid of enrolledIds) {
+            const list = await apiFetch(`/api/assignments/course/${cid}`) || [];
+            assigns = assigns.concat(list);
+        }
+        /* Deduplicate */
+        const seen = new Set();
+        assigns = assigns.filter(a => { if (seen.has(a.assignmentId)) return false; seen.add(a.assignmentId); return true; });
+
+        const mySubs  = subs || [];
+        const now     = new Date();
+        const getSubAssignId = s => s.assignment?.assignmentId ?? s.assignmentId;
+        const pending = assigns.filter(a =>
+            !mySubs.find(s => getSubAssignId(s) === a.assignmentId) && new Date(a.dueDate) >= now
+        ).length;
+        const att = assigns.length
+            ? Math.min(100, Math.round((mySubs.length / assigns.length) * 100))
+            : (enrolledIds.size > 0 ? 100 : 0);
+
+        document.getElementById('sEnrolled').textContent  = enrolledIds.size;
+        document.getElementById('sSubmitted').textContent = mySubs.length;
+        document.getElementById('sPending').textContent   = pending;
+        document.getElementById('sAtt').textContent       = att + '%';
+    });
+</script>
+</body>
+</html>

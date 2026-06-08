@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Course Content – ELMS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root {
+            --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26;
+            --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6;
+            --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --yellow:#fbbf24;
+            --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9;
+        }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+
+        /* ── Topbar ── */
+        .topbar {
+            background:rgba(10,10,14,0.98); border-bottom:1px solid var(--border);
+            padding:0 28px; height:62px; display:flex; align-items:center;
+            justify-content:space-between; position:sticky; top:0; z-index:200;
+            backdrop-filter:blur(10px);
+        }
+        .brand { font-size:1.3rem; font-weight:900; color:#fff; }
+        .brand span { color:var(--green); }
+        .topbar-right { display:flex; align-items:center; gap:10px; }
+        .role-badge {
+            padding:4px 14px; border-radius:20px; font-size:0.72rem; font-weight:700;
+            text-transform:uppercase; letter-spacing:0.5px;
+        }
+        .role-badge.admin   { background:rgba(139,92,246,0.15); color:var(--purple); border:1px solid rgba(139,92,246,0.3); }
+        .role-badge.student { background:rgba(45,181,93,0.15);  color:var(--green);  border:1px solid rgba(45,181,93,0.3); }
+        .btn-back {
+            background:var(--card); border:1px solid var(--border); color:var(--muted);
+            border-radius:9px; padding:7px 16px; font-size:0.82rem; font-weight:600;
+            cursor:pointer; display:flex; align-items:center; gap:7px; text-decoration:none;
+            transition:0.2s;
+        }
+        .btn-back:hover { color:#fff; border-color:#444; }
+
+        /* ── Hero ── */
+        .course-hero {
+            background:linear-gradient(135deg, #0a1a10 0%, #12121a 100%);
+            border-bottom:1px solid var(--border);
+            padding:36px 36px 28px;
+        }
+        .course-hero h1 { font-size:1.9rem; font-weight:900; margin-bottom:8px; }
+        .course-hero p  { color:var(--muted); max-width:680px; margin:0; line-height:1.7; }
+        .meta-pill {
+            background:#0d1f0d; border:1px solid rgba(45,181,93,0.25); color:#9ee7b3;
+            border-radius:20px; padding:4px 14px; font-size:0.74rem; font-weight:700;
+            display:inline-block;
+        }
+
+        /* ── Layout ── */
+        .workspace { display:flex; min-height:calc(100vh - 62px); }
+
+        /* ── Left nav ── */
+        .course-nav {
+            width:260px; flex-shrink:0;
+            background:var(--sidebar); border-right:1px solid var(--border);
+            padding:20px 14px; position:sticky; top:62px;
+            height:calc(100vh - 62px); overflow-y:auto;
+        }
+        .nav-section-lbl {
+            color:#3a3a5a; font-size:0.62rem; font-weight:800;
+            text-transform:uppercase; letter-spacing:1.5px;
+            padding:10px 8px 5px; margin-top:10px;
+        }
+        .topic-nav-btn {
+            display:flex; align-items:center; gap:10px;
+            padding:11px 12px; border-radius:9px; cursor:pointer;
+            color:var(--muted); font-size:0.82rem; font-weight:500;
+            transition:all 0.2s; margin-bottom:3px; border:none;
+            background:transparent; width:100%; text-align:left; position:relative;
+        }
+        .topic-nav-btn:hover { color:#fff; background:rgba(255,255,255,0.04); }
+        .topic-nav-btn.active {
+            color:#fff;
+            background:linear-gradient(135deg,rgba(45,181,93,0.18),rgba(45,181,93,0.04));
+        }
+        .topic-nav-btn.active::before {
+            content:''; position:absolute; left:0; top:50%; transform:translateY(-50%);
+            width:3px; height:65%; background:var(--green); border-radius:0 3px 3px 0;
+        }
+        .topic-nav-btn.active .tn-num { background:var(--green); color:#000; }
+        .topic-nav-btn.assign-btn.active::before { background:var(--cyan); }
+        .topic-nav-btn.assign-btn.active { color:var(--cyan); }
+        
+        /* Sequential Lock UI Adjustments */
+        .topic-nav-btn:disabled { opacity:0.3; cursor:not-allowed; }
+        .topic-nav-btn:disabled:hover { color:var(--muted); background:transparent; }
+        .topic-nav-btn .status-icon { margin-left:auto; font-size:0.8rem; }
+        .topic-nav-btn .status-icon.fa-lock { color:#4a4a6a; }
+        .topic-nav-btn .status-icon.fa-check-circle { color:var(--green); }
+
+        .tn-num {
+            width:22px; height:22px; border-radius:6px; flex-shrink:0;
+            background:var(--card2); color:var(--muted);
+            display:flex; align-items:center; justify-content:center;
+            font-size:0.68rem; font-weight:800; transition:0.2s;
+        }
+        .tn-text { line-height:1.3; font-size:0.8rem; }
+
+        /* ── Content area ── */
+        .content-area { flex:1; padding:36px; overflow-y:auto; max-width:900px; }
+
+        /* ── Content cards ── */
+        .topic-card {
+            background:var(--card); border:1px solid var(--border);
+            border-radius:14px; padding:28px 30px; margin-bottom:20px;
+            transition:border-color 0.2s;
+        }
+        .topic-card:hover { border-color:#3a3a5a; }
+        .chapter-badge {
+            background:#0d2a1a; color:var(--green); border-radius:7px;
+            padding:3px 12px; font-size:0.68rem; font-weight:800;
+            text-transform:uppercase; letter-spacing:0.7px;
+            display:inline-block; margin-bottom:12px;
+        }
+        .topic-card h4 { font-size:1.15rem; font-weight:800; margin-bottom:14px; color:#fff; }
+        .topic-card h5 { font-size:1.02rem; font-weight:700; margin-top:24px; margin-bottom:8px; color:var(--green); }
+        .topic-card p  { color:#bbb; line-height:1.9; margin-bottom:14px; font-size:0.88rem; text-align:justify; }
+        .topic-card p:last-child { margin-bottom:0; }
+        .topic-card ul { color:#bbb; padding-left:20px; margin-bottom:14px; }
+        .topic-card li { padding:4px 0; line-height:1.7; font-size:0.88rem; }
+        .check-icon { color:var(--green); margin-right:7px; font-size:0.75rem; }
+
+        /* Actions Progress Module */
+        .action-progress-container {
+            background:var(--card); border:1px solid var(--border);
+            border-radius:14px; padding:22px 28px; margin:24px 0;
+            display:flex; justify-content:space-between; align-items:center;
+        }
+        .btn-complete-module {
+            background:linear-gradient(135deg, var(--green), var(--green2));
+            color:#fff; border:none; border-radius:9px; padding:11px 24px;
+            font-weight:700; font-size:0.86rem; cursor:pointer;
+            display:flex; align-items:center; gap:8px; transition:all 0.2s;
+        }
+        .btn-complete-module:hover { opacity:0.9; transform:translateY(-1px); }
+        .module-completed-text { color:var(--green); font-weight:700; display:flex; align-items:center; gap:6px; font-size:0.9rem; }
+        .admin-preview-text { color:var(--purple); font-weight:600; font-size:0.88rem; }
+
+        /* ── Code block ── */
+        .code-block {
+            background:#080810; border:1px solid #1e1e30;
+            border-radius:10px; padding:18px 20px; margin:14px 0;
+            font-family:'Courier New',monospace; font-size:0.8rem;
+            color:#9ee7b3; line-height:1.8; overflow-x:auto; white-space:pre;
+        }
+        .kw  { color:#569cd6; }
+        .str { color:#ce9178; }
+        .cmt { color:#6a9955; font-style:italic; }
+        .cls { color:#4ec9b0; }
+
+        /* ── Tip / warn ── */
+        .tip-box {
+            background:#0d2a1a; border-left:4px solid var(--green);
+            border-radius:0 10px 10px 0; padding:12px 16px; margin:14px 0;
+            color:#9ee7b3; font-size:0.83rem; line-height:1.7;
+        }
+        .warn-box {
+            background:#2a1800; border-left:4px solid var(--orange);
+            border-radius:0 10px 10px 0; padding:12px 16px; margin:14px 0;
+            color:#f0c060; font-size:0.83rem; line-height:1.7;
+        }
+
+        /* ── Quiz ── */
+        .quiz-q {
+            background:var(--card); border:1px solid var(--border);
+            border-radius:14px; padding:24px 26px; margin-bottom:16px;
+        }
+        .q-num  { color:var(--green); font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+        .quiz-q .q-text { font-size:0.95rem; font-weight:700; margin-bottom:16px; color:#ffffff; }
+        .opt {
+            background:#1e1e28; border:1.5px solid #2a2a3a;
+            border-radius:9px; padding:12px 16px; margin-bottom:9px;
+            cursor:pointer; display:flex; align-items:center; gap:12px;
+            transition:0.2s; user-select:none;
+        }
+        .opt.disabled-admin { cursor:not-allowed !important; background:#181820 !important; border-color:#222230 !important; opacity:0.75; }
+        .opt.disabled-admin:hover { border-color:#222230 !important; background:#181820 !important; }
+        .opt:hover    { border-color:var(--green); background:#0d2010; }
+        .opt.selected { border-color:var(--green); background:#0d2010; }
+        .opt.correct  { border-color:var(--green); background:#0a1e0a; color:var(--green); font-weight:700; }
+        .opt.wrong    { border-color:var(--red);   background:#1e0a0a; color:var(--red); }
+        .opt input[type=radio] { accent-color:var(--green); width:15px; height:15px; flex-shrink:0; }
+        .score-box {
+            background:linear-gradient(135deg,#0d2a1a,var(--card));
+            border:2px solid var(--green); border-radius:16px;
+            padding:36px 28px; text-align:center; max-width:440px; margin:0 auto 24px;
+        }
+        .score-big { font-size:3.2rem; font-weight:900; color:var(--green); line-height:1; }
+
+        /* ── Assignment section ── */
+        .assign-card {
+            background:var(--card); border:1px solid var(--border);
+            border-radius:14px; padding:20px 24px; margin-bottom:14px;
+            display:flex; justify-content:space-between; align-items:center;
+            flex-wrap:wrap; gap:14px; transition:border-color 0.2s;
+            cursor:pointer;
+        }
+        .assign-card:hover { border-color:var(--cyan); transform:translateY(-2px); }
+        .assign-id    { color:var(--cyan); font-weight:800; font-size:0.72rem; margin-bottom:4px; }
+        .assign-title { font-weight:700; font-size:0.95rem; }
+        .due-badge    { background:#2a1800; color:var(--orange); border-radius:7px; padding:5px 14px; font-size:0.76rem; font-weight:700; }
+        .score-badge  { background:#001828; color:var(--cyan);   border-radius:7px; padding:5px 14px; font-size:0.76rem; font-weight:700; }
+        
+        /* ── Dynamic Form Builder styling ── */
+        .q-builder-card { background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:18px; margin-bottom:15px; }
+
+        /* ── Certificate Nav ── */
+        .topic-nav-btn.cert-btn.active::before { background:var(--yellow); }
+        .topic-nav-btn.cert-btn.active { color:var(--yellow); }
+
+        /* ── Certificate Pane ── */
+        .cert-locked-box {
+            background:var(--card); border:1px solid var(--border); border-radius:16px;
+            padding:56px 36px; text-align:center; max-width:560px; margin:48px auto;
+        }
+        .cert-locked-box .lock-icon {
+            font-size:3.2rem; color:#3a3a5a; margin-bottom:20px; display:block;
+        }
+        .cert-locked-box h5 { font-size:1.15rem; font-weight:800; color:#fff; margin-bottom:10px; }
+        .cert-locked-box p  { color:var(--muted); font-size:0.88rem; line-height:1.8; }
+        .cert-progress-bar-wrap {
+            background:#1e1e28; border-radius:99px; height:8px; margin:18px auto; max-width:320px;
+        }
+        .cert-progress-bar-fill {
+            height:8px; border-radius:99px;
+            background:linear-gradient(90deg,var(--green),var(--cyan));
+            transition:width 0.6s ease;
+        }
+        .cert-progress-label { font-size:0.76rem; color:var(--muted); margin-top:6px; }
+
+        .cert-outer-wrapper {
+            max-width:740px; margin:28px auto;
+        }
+        .cert-success-banner {
+            background:linear-gradient(135deg,rgba(45,181,93,0.12),rgba(6,182,212,0.06));
+            border:1px solid rgba(45,181,93,0.3); border-radius:12px;
+            padding:14px 22px; margin-bottom:28px;
+            display:flex; align-items:center; gap:12px;
+            color:var(--green); font-weight:700; font-size:0.9rem;
+        }
+        .cert-card {
+            border:2px solid var(--green); border-radius:18px;
+            background:linear-gradient(160deg,#071410 0%,#0a0a14 60%,#071018 100%);
+            padding:48px 44px; position:relative; overflow:hidden; text-align:center;
+        }
+        .cert-card::before {
+            content:''; position:absolute; inset:0;
+            background:radial-gradient(ellipse at 50% 0%, rgba(45,181,93,0.08) 0%, transparent 65%);
+            pointer-events:none;
+        }
+        /* Corner ornaments */
+        .cert-corner { position:absolute; width:32px; height:32px; border-color:var(--green); border-style:solid; }
+        .cert-corner.tl { top:14px; left:14px;  border-width:2px 0 0 2px; border-radius:4px 0 0 0; }
+        .cert-corner.tr { top:14px; right:14px; border-width:2px 2px 0 0; border-radius:0 4px 0 0; }
+        .cert-corner.bl { bottom:14px; left:14px;  border-width:0 0 2px 2px; border-radius:0 0 0 4px; }
+        .cert-corner.br { bottom:14px; right:14px; border-width:0 2px 2px 0; border-radius:0 0 4px 0; }
+
+        .cert-brand   { font-size:1.6rem; font-weight:900; color:#fff; letter-spacing:3px; }
+        .cert-brand span { color:var(--green); }
+        .cert-tagline { font-size:0.68rem; letter-spacing:4px; text-transform:uppercase; color:#4a5568; margin-top:2px; margin-bottom:22px; }
+        .cert-badge-row { display:flex; justify-content:center; margin-bottom:20px; }
+        .cert-medal {
+            width:72px; height:72px; border-radius:50%;
+            background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,191,36,0.05));
+            border:2px solid rgba(251,191,36,0.5);
+            display:flex; align-items:center; justify-content:center;
+            font-size:2rem;
+        }
+        .cert-presents  { font-size:0.7rem; color:#4a5568; text-transform:uppercase; letter-spacing:2.5px; margin-bottom:6px; }
+        .cert-name      { font-size:2.4rem; font-weight:900; color:#fff; line-height:1.1; margin-bottom:6px; }
+        .cert-name-line {
+            width:60%; height:1.5px; margin:0 auto 20px;
+            background:linear-gradient(90deg,transparent,var(--green),transparent);
+        }
+        .cert-completed-text { font-size:0.82rem; color:#9ca3af; margin-bottom:10px; }
+        .cert-course-name    { font-size:1.5rem; font-weight:800; color:var(--green); margin-bottom:8px; }
+        .cert-sub-text       { font-size:0.8rem; color:#6b7280; line-height:1.7; max-width:460px; margin:0 auto 24px; }
+        .cert-divider {
+            border:none; border-top:1px solid #1e2535; margin:0 auto 20px; width:70%;
+        }
+        .cert-meta-row { display:flex; justify-content:center; gap:40px; margin-bottom:8px; }
+        .cert-meta-item { text-align:center; }
+        .cert-meta-label { font-size:0.62rem; color:#4a5568; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:3px; }
+        .cert-meta-value { font-size:0.82rem; font-weight:700; color:#9ca3af; }
+
+        .btn-download-cert {
+            background:linear-gradient(135deg, var(--green), var(--green2));
+            color:#fff; border:none; border-radius:10px;
+            padding:14px 36px; font-weight:700; font-size:0.92rem;
+            cursor:pointer; margin-top:28px;
+            display:inline-flex; align-items:center; gap:10px;
+            transition:all 0.25s; box-shadow:0 4px 20px rgba(45,181,93,0.25);
+        }
+        .btn-download-cert:hover { opacity:0.88; transform:translateY(-2px); box-shadow:0 6px 28px rgba(45,181,93,0.35); }
+        .btn-download-cert i { font-size:1rem; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="brand">ELM<span>S</span></div>
+    <div class="topbar-right">
+        <span class="role-badge" id="roleBadge"></span>
+        <button class="btn-back" onclick="goBack()">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+    </div>
+</div>
+
+<div class="course-hero">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="meta-pill" id="heroCourseId">#–</span>
+        <span class="meta-pill" id="heroSemester">–</span>
+        <span class="meta-pill" id="heroCredits">– Credits</span>
+    </div>
+    <h1 id="heroTitle">Loading…</h1>
+    <p id="heroDesc">Explore the modules, complete the quiz, and review assignments.</p>
+</div>
+
+<div class="workspace">
+
+    <div class="course-nav" id="courseNav">
+        <div class="nav-section-lbl">Content</div>
+        <div id="topicNavList"></div>
+        <div class="nav-section-lbl" style="margin-top:14px;">Assignments</div>
+        <button class="topic-nav-btn assign-btn" id="navAssign" onclick="showPane('assign')">
+            <span class="tn-num" style="background:rgba(6,182,212,0.15); color:var(--cyan);">
+                <i class="fas fa-tasks" style="font-size:0.7rem;"></i>
+            </span>
+            <span class="tn-text">Assignments</span>
+        </button>
+        <div class="nav-section-lbl" style="margin-top:14px;">Certificate</div>
+        <button class="topic-nav-btn cert-btn" id="navCert" onclick="showPane('certificate')">
+            <span class="tn-num" style="background:rgba(251,191,36,0.15); color:var(--yellow);">
+                <i class="fas fa-certificate" style="font-size:0.7rem;"></i>
+            </span>
+            <span class="tn-text">Course Certificate</span>
+        </button>
+    </div>
+
+    <div class="content-area">
+
+        <div id="paneContent"></div>
+
+        <div id="moduleProgressionActionBar" class="action-progress-container" style="display:none;">
+            <div id="progressionInfoText" style="color:var(--muted); font-size:0.82rem;">
+                <i class="fas fa-exclamation-circle text-warning me-1"></i> Finish checking all code samples above to complete this chapter.
+            </div>
+            <div id="progressionActionSlot"></div>
+        </div>
+
+        <div id="paneAssignInline" style="display:block;">
+            <div class="section-title"><i class="fas fa-tasks"></i> Assignments</div>
+            <div id="assignRendererInline">
+                <div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading assignments…</div>
+            </div>
+        </div>
+
+        <div id="paneQuiz" style="display:none;">
+            <div class="section-title" id="quizPaneTitle"><i class="fas fa-search-plus"></i> Assignment Blueprint Preview</div>
+            <div class="quiz-header-row mb-1">
+                <span style="color:var(--muted); font-size:0.8rem;" id="quizProgressTxt"></span>
+            </div>
+            <div id="quizRenderer"></div>
+        </div>
+
+        <!-- ══ Certificate Pane ══ -->
+        <div id="paneCertificate" style="display:none;"></div>
+
+        <div id="paneAssign" style="display:none;">
+            <div class="section-title"><i class="fas fa-tasks"></i> Assignments</div>
+
+            <div id="adminCreateSection" style="display:none;">
+                <div class="create-assign-panel" id="baseAssignFormContainer">
+                    <h6><i class="fas fa-plus-circle me-2 text-success"></i>Create New Assignment</h6>
+                    <div id="assignFlash"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="f-label">Assignment Title *</label>
+                            <input class="f-input" id="aTitle" placeholder="e.g. OOP Class Design Lab">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="f-label">Max Score *</label>
+                            <input class="f-input" id="aMaxScore" type="number" placeholder="100" min="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="f-label">Due Date *</label>
+                            <input class="f-input" id="aDueDate" type="date">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn-create-assign" onclick="initiateQuizBuilder()">
+                            <i class="fas fa-save me-1"></i> Save Assignment & Build Quiz
+                        </button>
+                    </div>
+                </div>
+
+                <div class="create-assign-panel mt-3" id="quizBuilderFormContainer" style="display:none;">
+                    <h5 class="fw-bold text-white mb-2"><i class="fas fa-vial text-warning me-2"></i>Configure Assignment Evaluation Questions (10 Required)</h5>
+                    <p class="text-muted small mb-4">Populate the questionnaire fields below. Click save to store them inside the html page template directly.</p>
+                    <div id="dynamicQuizBuilderForm">
+                        <div id="questionsFormFieldsContainer"></div>
+                        <div class="mt-4 d-flex gap-3">
+                            <button type="button" class="btn-create-assign px-5" onclick="finalizeAssignmentSubmission()"><i class="fas fa-cloud-upload-alt me-1"></i> Save Full Assignment Layout</button>
+                            <button type="button" class="btn btn-outline-secondary rounded-3 px-4" onclick="cancelQuizBuilder()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="assignRenderer">
+                <div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading assignments…</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+/* Course ID to Content Mapping - maps DB course IDs to content library keys */
+//const COURSE_ID_MAP = {
+  //  "1": "2",   // Course ID 1 -> Java Core Architecture
+  //  "5": "6",   // Course ID 5 -> SQL Database Infrastructure  
+   // "8": "7"    // Course ID 8 -> Data Structures & Algorithms
+//};
+
+const COURSE_LIBRARY = {
+    /* 1. JAVA CORE ARCHITECTURE (ID: "2") */
+	
+    "2": {
+        meta: { title:"Java Core Architecture", semester:"1", credits:4,
+                desc:"Master corporate Java architecture — OOP pillars, the Collections framework, Try-Catch hierarchies, and JVM memory pools." },
+        topics: [
+            {
+                label:"OOP Architecture & Pillars",
+                sections:[
+                    { badge:"Chapter 1", title:"Deep Dive into Object-Oriented Blueprint Design",
+                      body: GermanCoreOopContent(),
+                      bullets:["Classes serve as active runtime configuration blueprints","Heap allocations trigger via explicit constructor calls","Encapsulation guards parameters behind accessor paths","Polymorphism handles late binding routines cleanly"],
+                      code: `public class Employee {\n    private double salary;\n\n    public double getSalary() { return this.salary; }\n    public void setSalary(double amount) {\n        if(amount > 0) { this.salary = amount; }\n    }\n}`,
+                      tip:"Leverage the @Override annotation to catch typing errors early at compile time." }
+                ]
+            },
+            {
+                label:"Collections Framework & API",
+                sections:[
+                    { badge:"Chapter 2", title:"The Java Collections Framework & API Abstractions",
+                      body: GermanCoreCollectionsContent(),
+                      bullets:["List indices preserve sequential insertion rules","Set storage modules reject redundant object tracking inputs","Map collections bind unique tracking keys to object parameters","HashMap leverages bucket arrays to optimize search steps"],
+                      code: `Map&lt;String, Integer&gt; inventory = new HashMap&lt;&gt;();\ninventory.put("SKU-99", 450);\nint stock = inventory.get("SKU-99"); // Instant key hashing lookup`,
+                      tip: "Use Iterator loops when deleting elements from an active collection to avoid concurrent modification errors." }
+                ]
+            },
+            {
+                label:"Exception Handling Frameworks",
+                sections:[
+                    { badge:"Chapter 3", title:"Exception Processing & Platform Resilience",
+                      body: GermanCoreExceptionContent(),
+                      bullets:["Try boundaries isolate code paths prone to failure","Catch parameters handle explicit failures sequentially","Finally statements run cleanly to release hardware resources","NullPointerException indicates calls made over null object pointers"],
+                      code: `try {\n    BufferedReader reader = new BufferedReader(new FileReader("data.txt"));\n    System.out.println(reader.readLine());\n} catch (IOException e) {\n    System.out.println("Encountered active file parsing exception.");\n} finally {\n    System.out.println("Resource clean routines complete.");\n}`,
+                      warn: "Never leave catch blocks empty. Swallowing exceptions can hide critical issues from logging monitors." }
+                ]
+            },
+            {
+                label:"Advanced Utilities & JVM",
+                sections:[
+                    { badge:"Chapter 4", title:"JVM Internals & Dynamic Memory Allocations",
+                      body: GermanCoreJvmContent(),
+                      bullets:["Stream pipelines transform collection arrays functionally","Synchronized locks block multi-threaded data race conditions","Stack frames isolate temporary execution local variables","Heap allocations track live object instances globally"],
+                      code: `List&lt;String&gt; premiumUsers = userList.stream()\n    .filter(user -> user.getAccountTier().equals("PREMIUM"))\n    .map(User::EmailAddress)\n    .collect(Collectors.toList());`,
+                      tip: "Leverage Java 8 Stream operations to write clean, declarative data transformation filters." }
+                ]
+            }
+        ],
+        quiz:[
+            { q:"Which architectural feature isolates instance attributes away from unmanaged external modification?", opts:["Polymorphism","Data Encapsulation","Inheritance","Late Binding"], ans:1 },
+            { q:"Which collection interface should be selected to enforce value uniqueness?", opts:["List Interface","Set Architecture","Vector Array","Linked Node Chain"], ans:1 },
+            { q:"Which block ensures reliable execution of safety resource cleanup routines?", opts:["try","catch","finally","finalize"], ans:2 },
+            { q:"Where does the virtual machine instantiate active runtime class objects?", opts:["Thread Frame Stack","Global Application Heap Pool","Static Registry Sector","CPU Registers Cache"], ans:1 },
+            { q:"Which optimization pipeline handles collection iterations functionally without writing nested loops?", opts:["Collections Utility Class","Stream API Pipelines","Synchronized Thread Mutex","Generics Type Registry"], ans:1 }
+        ]
+    },
+
+    /* 2. REACT WEB FRAMEWORK (ID: "3") */
+    "3": {
+        meta: { title:"React Web Framework", semester:"1", credits:3,
+                desc:"Build modern, component-driven web UIs using JSX, Hooks, Virtual DOM, and state management." },
+        topics: [
+            {
+                label:"Component Architecture & JSX",
+                sections:[
+                    { badge:"Chapter 1", title:"Declarative View Component Architecture",
+                      body: GermanReactComponentContent(),
+                      bullets: ["Modular views segment single screens into isolated layouts","Props pass configuration variables downward to children","JSX combines presentation tags directly with javascript fields","One-way data flows ensure rendering steps remain predictable"],
+                      code: `export function UserCard({ profile }) {\n    return (\n        &lt;div className="card-container"&gt;\n            &lt;h3&gt;{profile.name}&lt;/h3&gt;\n            &lt;p&gt;Role Profile: {profile.role}&lt;/p&gt;\n        &lt;/div&gt;\n    );\n}`,
+                      tip:"Ensure all presentation layers inside JSX map cleanly beneath a single root node wrapper or structural fragment." }
+                ]
+            },
+            {
+                label:"State Hooks & Mutation Flows",
+                sections:[
+                    { badge:"Chapter 2", title:"State Infrastructure & Reactive Data Pipelines",
+                      body: GermanReactStateContent(),
+                      bullets: ["State functions as component memory tracking variable data","Mutating state values forces component tree evaluation","useState registers localized values alongside setter pointers","Framework changes protect synchronization limits"],
+                      code: `import React, { useState } from 'react';\n\nexport function CounterWidget() {\n    const [clickCount, setClickCount] = useState(0);\n    return (\n        &lt;button onClick={() => setClickCount(clickCount + 1)}&gt;\n            Total Interactions: {clickCount}\n        &lt;/button&gt;\n    );\n}`,
+                      tip: "Pass a callback function to your state setter if your next calculation relies on the current value." }
+                ]
+            },
+            {
+                label:"Effect Framework Intercepts",
+                sections:[
+                    { badge:"Chapter 3", title:"Side Effects Synchronizations and Lifecycles Hooks",
+                      body: GermanReactEffectContent(),
+                      bullets: ["Side effects separate external API interactions from main threads","useEffect isolates asynchronous tasks to protect layout speed","Empty arrays [] restrict implementation actions to the initial mount","Cleanup return functions close parameters to prevent memory leaks"],
+                      code: `useEffect(() => {\n    fetch("https://api.system.local/records")\n        .then(res => res.json())\n        .then(data => setRegistryData(data));\n}, []); // Empty array ensures this runs once on mount`,
+                      warn: "Omitting necessary values from the dependency array can cause outdated data bugs." }
+                ]
+            },
+            {
+                label:"Virtual DOM Performance",
+                sections:[
+                    { badge:"Chapter 4", title:"Virtual Tree Optimization & Reconciliation Algorithms",
+                      body: GermanReactVirtualDomContent(),
+                      bullets: ["Virtual DOM mirrors browser tracks inside memory stores","Layout changes resolve virtually before updating real elements","Diffing algorithms isolate structural variations in O(n) steps","Stable keys help tracking paths map array rows instantly"],
+                      code: `{items.map(item => (\n    &lt;RowWidget key={item.id} data={item} /&gt;\n))}`,
+                      tip: "Avoid using loop index integers as keys if your list elements can filter or reorder dynamically." }
+                ]
+            }
+        ],
+        quiz:[
+            { q:"Which engine maps template layers in memory to check structural differences before applying browser updates?", opts:["Virtual DOM Engine","Native Compiler Module","Direct Style Sheet Registry","Bytecode Interpreter"], ans:0 },
+            { q:"Which core hook is designed to capture local reactive components values?", opts:["useEffect","useState","useContext","useReducer"], ans:1 },
+            { q:"Where should asynchronous database interactions or server subscriptions fetch inside functional structures?", opts:["Inside raw output layout return streams","Inside dedicated useEffect parameter frameworks","Directly in global resource headers","In standard configuration builders"], ans:1 },
+            { q:"What is the primary function of unique structural stable keys across collection arrays?", opts:["To style background colors automatically","To help reconciliation tracking chains sync structural changes accurately","To compile elements into platform bytecode","To lock parent interface variables"], ans:1 },
+            { q:"Which syntax block unifies raw HTML layout presentation tags directly with active JavaScript parameters?", opts:["JSX Syntax Blocks","Compiled CSS Configurations","Assembly Manifest Files","JSON Data Matrices"], ans:0 }
+        ]
+    },
+
+    /* 3. C++ SYSTEMS PROGRAMMING (ID: "4") */
+    "4": {
+        meta: { title:"C++ Systems Programming", semester:"1", credits:4,
+                desc:"Learn systems-level C++ — pointers, memory management, STL, templates, and modern C++17/20 features." },
+        topics: [
+            {
+                label:"C++ Layout Basics",
+                sections:[
+                    { badge:"Chapter 1", title:"Syntax, Native Compilation, and Toolchains",
+                      body: GermanCppToolchainContent(),
+                      bullets:["Build systems compile source straight into machine binary files","Header files isolates element declarations from definition blocks","Namespaces group definitions to resolve global link collisions","The auto keyword evaluates property types during compilation steps"],
+                      code: `#include &lt;iostream&gt;\n#include &lt;vector&gt;\n\nint main() {\n    std::vector&lt;int&gt; track = {1, 2, 3};\n    for(auto val : track) { std::cout &lt;&lt; val &lt;&lt; " "; }\n    return 0;\n}`,
+                      tip:"Compile with warning flags (-Wall -Wextra) enabled to detect logic issues early." }
+                ]
+            },
+            {
+                label:"Direct Memory Management",
+                sections:[
+                    { badge:"Chapter 2", title:"Low-Level RAM Access, Allocation, and Lifecycles",
+                      body: GermanCppMemoryContent(),
+                      bullets:["Pointers contain explicit physical storage target address values","The dereference operator manipulates variables at their memory source","Manual new/delete statements require careful scoping tracking","Smart pointers automatically clean up heap memory to prevent leaks"],
+                      code: `#include &lt;memory&gt;\n#include &lt;iostream&gt;\n\nvoid runTask() {\n    auto safePtr = std::make_unique&lt;int&gt;(256);\n    std::cout &lt;&lt; *safePtr; // Instantly cleaned from space automatically on exit\n}`,
+                      warn: "Avoid raw pointers for object ownership. Use smart pointers to insulate your code from memory leak vectors." }
+                ]
+            },
+            {
+                label:"Polymorphism & Classes",
+                sections:[
+                    { badge:"Chapter 3", title:"Dynamic Polymorphism and Virtual Tables",
+                      body: GermanCppPolymorphismContent(),
+                      bullets:["Destructors automate resource release loops when objects exit scope","The virtual keyword configures late-binding routing paths","Pure virtual syntax establishes abstract component requirements","The override keyword validates template method signatures during builds"],
+                      code: `class Shape {\npublic:\n    virtual double computeArea() const = 0; // Pure virtual enforcement\n    virtual ~Shape() = default;\n};`,
+                      tip:"Always make base class destructors virtual to guarantee complete memory cleanup throughout child hierarchies." }
+                ]
+            }
+        ],
+        quiz:[
+            { q:"Which operator yields the direct hardware memory address direction of an active variable?", opts:["*","->","&","::"], ans:2 },
+            { q:"Which smart container locks down single unique ownership boundaries over heap targets?", opts:["shared_ptr","weak_ptr","unique_ptr","raw pointer"], ans:2 },
+            { q:"What keyword configuration routes call paths to sub-entity overrides at runtime?", opts:["static","inline","virtual","explicit"], ans:2 },
+            { q:"Which STL container preserves elements uniquely in a sorted tree index pattern?", opts:["vector","list","set","unordered_map"], ans:2 }
+        ]
+    },
+
+    /* 4. SQL DATABASE INFRASTRUCTURE (ID: "6") */
+    "6": {
+        meta: { title:"SQL Database Infrastructure", semester:"1", credits:3,
+                desc:"Master relational management engines — structured data definitions, data manipulations, keys, indices, and safe transaction properties." },
+        topics: [
+            {
+                label:"Relational Baselines",
+                sections:[
+                    { badge:"Chapter 1", title:"Schema Definition, Relational Blueprints, and Constraints",
+                      body: GermanSqlSchemaContent(),
+                      bullets:["DDL instructions configure structural schema footprints","DML statements modify and query database rows","Primary keys protect table rows from duplication","Foreign keys link dependent tables to maintain relational integrity"],
+                      code: `CREATE TABLE Students (\n    student_id INT PRIMARY KEY,\n    full_name VARCHAR(100) NOT NULL,\n    gpa DECIMAL(3,2)\n);`,
+                      tip: "Index columns frequently referenced in WHERE filters to speed up row retrieval." }
+                ]
+            },
+            {
+                label:"Advanced Query Engineering",
+                sections:[
+                    { badge:"Chapter 2", title:"Relational Join Mechanics, Aggregations, and Set Rules",
+                      body: GermanSqlQueryingContent(),
+                      bullets:["Inner joins match keys across tables using set logic","Left joins keep all left table records intact","Group By folds raw rows into structured summary tracks","Having statements apply conditions to grouped calculations"],
+                      code: `SELECT c.title, COUNT(e.student_id) AS total_enrolled\nFROM courses c\nINNER JOIN enrollments e ON c.id = e.course_id\nGROUP BY c.title\nHAVING total_enrolled > 5;`,
+                      tip: "Prefix complex selections with EXPLAIN to inspect how the database handles table scanning paths." }
+                ]
+            }
+        ],
+        quiz:[
+            { q:"Which language scope handles operational schema adjustments like creating or changing table footprints?", opts:["DML","DDL","DCL","TCL"], ans:1 },
+            { q:"Which JOIN strategy keeps all source left records intact regardless of matching target records?", opts:["INNER JOIN","RIGHT OUTER JOIN","LEFT OUTER JOIN","FULL JOIN"], ans:2 },
+            { q:"Which command checks output filter parameters computed across aggregate functions?", opts:["WHERE","HAVING","ORDER BY","DISTINCT"], ans:1 }
+        ]
+    },
+
+    /* 5. DATA STRUCTURES & ALGORITHMS (ID: "7") */
+    "7": {
+        meta: { title:"Data Structures & Algorithms", semester:"1", credits:5,
+                desc:"Master fundamental computer science paradigms — array tracking mechanics, linear pointers, trees, stacks, graphs, and dynamic problem-solving approaches." },
+        topics: [
+            {
+                label:"Linear Arrays & Shifting Pointers",
+                sections:[
+                    { badge:"Chapter 1", title:"Continuous Memory Layouts and Two-Pointer Logic Paths",
+                      body: GermanDsaArraysContent(),
+                      bullets:["Continuous arrays offer fast constant time index reads","Inserting or removing data rows requires linear element shifts","Two-pointer strategies process data paths without extra memory allocations","Sliding windows track contiguous sections across linear lists"],
+                      code: `int left = 0, right = nums.length - 1;\nwhile (left &lt; right) {\n    int targetSum = nums[left] + nums[right];\n    if (targetSum == target) return true;\n    else if (targetSum &lt; target) left++;\n    else right--;\n}`,
+                      tip: "Sort your target array before choosing two-pointer boundaries or binary search loops." }
+                ]
+            },
+            {
+                label:"Linked Layout Nodes",
+                sections:[
+                    { badge:"Chapter 2", title:"Linked Nodes Chains and Runtime Address Mapping Protocols",
+                      body: GermanDsaLinkedListContent(),
+                      bullets:["Nodes link element values to explicit memory addresses","Insertions run in constant time once target locations are known","Fast-and-slow runner pointers check lists for cycles","Dummy head node structures simplify edge cases at list boundaries"],
+                      code: `ListNode slow = head, fast = head;\nwhile (fast != null && fast.next != null) {\n    slow = slow.next;\n    fast = fast.next.next;\n    if (slow == fast) return true; // Reference cycle caught!\n}`,
+                      tip: "Map node reference movements on paper to isolate pointer edge cases before writing implementation loops." }
+                ]
+            },
+            {
+                label:"Hierarchical Tree Structures",
+                sections:[
+                    { badge:"Chapter 3", title:"Binary Search Trees Layouts and Hierarchical Traversals",
+                      body: GermanDsaTreesContent(),
+                      bullets:["Binary search trees separate smaller values left and larger values right","Balanced structures optimize lookup steps down to logarithmic complexity","In-order traversals process nodes sequentially to output sorted lists","Breadth-First algorithms use queues to check trees layer by layer"],
+                      code: `void traverseTree(TreeNode root) {\n    if (root == null) return;\n    traverseTree(root.left);\n    System.out.print(root.val + " "); // Target node output code\n    traverseTree(root.right);\n}`,
+                      tip: "An in-order traversal across a Binary Search Tree extracts your datasets in sorted order automatically." }
+                ]
+            }
+        ],
+        quiz:[
+            { q:"What is the runtime scaling order of an optimized binary search routine?", opts:["O(n)","O(n log n)","O(log n)","O(1)"], ans:2 },
+            { q:"Which layout restricts input tracking to a Last-In, First-Out (LIFO) order?", opts:["Queue","Stack","Linked List","Heap Module"], ans:1 },
+            { q:"Which traversal style prints Binary Search Tree node properties in sorted order?", opts:["Pre-order","Post-order","In-order","Level-order"], ans:2 }
+        ]
+    }
+};
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   TEXTBOOK DATA EXPANSIONS (2 COMPREHENSIVE TEXT PAGES PACKED PER HEADING)
+   ════════════════════════════════════════════════════════════════════════════════ */
+function GermanCoreOopContent() {
+    return `<h5>Page 1: Architectural Foundations of Blueprints and Object Construction</h5>
+            <p>Java encapsulates execution blueprints and attribute states cleanly within structured classes. A class is a passive design file inside structural folders until initialized by compilation mechanisms. Compiling source files produces native bytecode inside <code>.class</code> files, parsed cleanly by the ClassLoader subsystem of the Java Virtual Machine. When runtimes process the <code>new</code> statement, the JVM allocates continuous memory slots inside the global application Heap pool, cleanly decoupling dynamic application data models from processing threads.</p>
+            <p>Constructors serve as explicit structure startup routines, mirroring the exact class name. They take no return keywords and run instantly upon container allocation to establish primitive values. Advanced Java environments leverage constructor overloading, chaining parameters via <code>this()</code> commands to decrease logic redundancy. This architecture ensures structural invariants check out securely before external references acquire the heap address space.</p>
+            <h5>Page 2: Deep Technical Breakdown of the 4 Foundational Pillars</h5>
+            <p>To deploy robust and scalable enterprise microservices, object layouts must strictly satisfy the explicit boundaries established by the core object-oriented principles:</p>
+            <ul>
+                <li><strong>Encapsulation:</strong> Guards underlying parameters from direct external modification. It marks fields as <code>private</code> and exposes interaction paths through public accessor methods (getters and setters), enabling bounding checks before values mutate.</li>
+                <li><strong>Inheritance:</strong> Connects sub-entities to baseline parents using the <code>extends</code> syntax wrapper. This permits child elements to reuse structural variables and behaviors while reducing repetitive code architecture patterns.</li>
+                <li><strong>Polymorphism:</strong> Directs late-binding dispatch runtimes. Subclasses redefine parent method behaviors via Method Overriding while matching original parameter footprints exactly. Runtimes navigate virtual table (vtable) indexes to execute the true override.</li>
+                <li><strong>Abstraction:</strong> Declares behavioral interfaces using abstract signatures. It outlines systemic expectations without providing underlying implementation code, allowing designers to map interactions cleanly.</li>
+            </ul>`;
+}
+
+function GermanCoreCollectionsContent() {
+    return `<h5>Page 1: Collection Interface Hierarchies & Sequential Storage Frameworks</h5>
+            <p>Enterprise microservices frequently organize groups of system properties, record lists, uniqueness verifications, and message queues. The Java Collections Framework introduces standardized container specifications that insulate business modules from raw address index shifting. The base <code>Collection</code> layout mandates standard addition, collection cleansing, and element tracing methodologies used across all linear container modules.</p>
+            <p>The <code>List</code> interface represents ordered record tracks that permit item duplication. <code>ArrayList</code> backs sequential positions using a resizable continuous data array, yielding rapid random reading capabilities. Conversely, <code>LinkedList</code> connects elements sequentially using backward-and-forward pointers, optimizing structural updates for tracking channels that undergo frequent mutations. The <code>Set</code> interface enforces strict element uniqueness by evaluating instance hash signatures and dropping identical entries.</p>
+            <h5>Page 2: Hashing Engine Architectures and Associative Data Maps</h5>
+            <p>The <code>Map</code> interface builds a separate storage configuration linking a distinct key to a specific data value destination, requiring every registered key to maintain complete uniqueness. The standard implementation, <code>HashMap</code>, provides constant-time reading performance $O(1)$ by translating key elements via hashing functions to determine the exact bucket location index.</p>
+            <p>If bucket address collisions occur (different keys resolve to the same location), components link sequentially using node references. Runtimes automatically convert these links into balanced red-black trees if bucket item counts exceed eight entries, keeping search paths optimized.</p>`;
+}
+
+function GermanCoreExceptionContent() {
+    return `<h5>Page 1: Exception Tracking Blocks and Safety Resource Cleanups</h5>
+            <p>Corporate execution tracks frequently hit real-world system anomalies, including dead database connection pools, missing local file handles, or bad payload variable inputs. Robust platforms intercept these active failures safely using explicit validation blocks instead of crashing complete runtime platforms.</p>
+            <p>Java captures unmanaged errors using <code>try</code> block configurations, sending tracking metrics down sequential <code>catch</code> chains sorted from explicit subclasses up to generic fallback exceptions. The <code>finally</code> block executes clean instructions reliably, closing resource handles like database links or file streams regardless of the block outcome. Modern codebases implement try-with-resources, which handles file close routines automatically upon block completion for types inheriting the <code>AutoCloseable</code> interface.</p>
+            <h5>Page 2: Differentiating Systems Modifiers: Final, Finally, and Finalize</h5>
+            <p>Engineers must carefully differentiate between these similarly-named keywords across code structures:</p>
+            <ul>
+                <li><code>final</code>: An architectural keyword that defines immutable variables, locks methods against overriding, and stops class inheritance entirely.</li>
+                <li><code>finally</code>: The structural block used alongside try-catch statements to ensure file handles close safely.</li>
+                <li><code>finalize()</code>: A deprecated cleanup handler run by the garbage collector before deleting an instance out of the heap space.</li>
+            </ul>`;
+}
+
+function GermanCoreJvmContent() {
+    return `<h5>Page 1: Virtual Machine Storage Separation – Stack vs Heap Layouts</h5>
+            <p>The Java Virtual Machine organizes host hardware resources by splitting active runtime data into two main memory locations: the Stack and the Heap.</p>
+            <p>The Stack segment targets temporary thread execution frames. It tracks localized primitive primitives and object target references, popping them off the stack frame instantly as methods complete. The Heap acts as a shared application pool tracking all live, dynamically initialized object properties. Objects on the heap remain accessible as long as an active reference path reaches them from a live thread frame on the stack.</p>
+            <h5>Page 2: Garbage Collection Generation Pipelines & OutOfMemory Errors</h5>
+            <p>The system Garbage Collector runs automated sweeps through the heap pool, clearing out object blocks that no longer have live reference pointers. Memory leaks happen when an application accidently retains reference addresses to unused data, preventing the Garbage Collector from freeing space and eventually causing an <code>OutOfMemoryError</code>.</p>`;
+}
+
+function GermanReactComponentContent() {
+    return `<h5>Page 1: Atomic Interface Breakdown and Pure Composition Flow Lines</h5>
+            <p>React changes web development by splitting complex, monolithic page layouts into isolated, standalone view blocks called components. These components maintain their own rendering logic and combine smoothly to form modular user interfaces.</p>
+            <p>This decoupling allows front-end developers to apply clean software engineering principles to the presentation layer. Every visual segment—such as navigation elements, user profile feeds, or data tables—can be structured as an independent module. These modules accept incoming configuration parameters called properties, or <strong>Props</strong>, which flow down from parent containers in a predictable, unidirectional stream.</p>
+            <h5>Page 2: Declarative JSX Parsing Transformations</h5>
+            <p>React combines rendering logic alongside markup configurations inside file layers using <strong>JSX (JavaScript XML)</strong> syntax. This HTML-like syntax acts as template shortcuts that convert cleanly into standard React element creation loops during compilation steps.</p>`;
+}
+
+function GermanReactStateContent() {
+    return `<h5>Page 1: Component Memory Allocations and Re-rendering Loop Pipelines</h5>
+            <p>Front-end interfaces are highly dynamic, changing as users type inputs, toggle settings, or receive real-time server updates. React tracks these variations using internal component variables called State.</p>
+            <p>Unlike regular JavaScript variables, changing a React state field tells the underlying framework to step in. React intercepts the mutation request and automatically schedules a re-rendering cycle for the updated component and its children, ensuring the interface matches the fresh state data.</p>
+            <h5>Page 2: Managing State Updates via useState Hook Parameters</h5>
+            <p>Functional components use the <code>useState</code> hook to declare and modify state variables. The hook returns a state value and a dedicated setter function, preventing developers from mutating values directly and breaking framework rendering pipelines.</p>`;
+}
+
+function GermanReactEffectContent() {
+    return `<h5>Page 1: Managing Asynchronous Actions Outside Rendering Tracks</h5>
+            <p>Functional components focus primarily on converting props and state into a predictable interface structure. Operations that touch external systems are classified as **Side Effects** and are isolated to keep rendering fast and smooth.</p>
+            <p>Side effects include actions like calling REST APIs, setting up browser intervals, or adjusting raw DOM node attributes. Running these operations directly inside a component's body can block rendering pipelines and degrade performance.</p>
+            <h5>Page 2: Dependency Arrays Coordination and Event Unregistration Lifecycle</h5>
+            <p>The framework resolves this using the <code>useEffect</code> hook, which defers side effects until rendering completes. It accepts a dependency configuration array that controls exactly when the effect runs, preventing unnecessary execution loops.</p>`;
+}
+
+function GermanReactVirtualDomContent() {
+    return `<h5>Page 1: In-Memory Layout Blueprinting Diffs</h5>
+            <p>Directly manipulating a web browser's physical HTML DOM tree is resource-intensive and can cause interface lag during rapid screen updates. React eliminates this bottleneck using an in-memory optimization engine.</p>
+            <p>React maintains an optimized copy of the real DOM tree in RAM, known as the <strong>Virtual DOM</strong>. When state updates happen, React builds a brand-new Virtual DOM layout mapping out the proposed changes.</p>
+            <h5>Page 2: Reconciliation Pipelines and Lists Key Matching</h5>
+            <p>The framework then runs an efficient **Diffing Algorithm** to compare the new tree against the old one and isolate the exact changes. During this **Reconciliation** phase, React batches updates and applies changes only to the affected real DOM nodes, maximizing performance.</p>`;
+}
+
+function GermanCppToolchainContent() {
+    return `<h5>1. Modern Native Code Compilation Toolchains</h5>
+            <p>C++ delivers fast performance by compiling source files directly into native machine code instructions. The compilation process typically runs across four clear milestones managed case-by-case inside system shells: preprocessing macros expansions, translation into architectural assembly directives, object file packaging, and global symbol linkage updates.</p>
+            <p>Source layouts isolate element footprints inside header declarations (<code>.h</code>), mapping executable implementation code separately inside compilation modules (<code>.cpp</code>). This modular separation speeds up incremental compilation times across large multi-tiered project tracks. Namespaces encapsulate these blocks securely, preventing name collision defects when linking third-party binaries.</p>
+            <h5>2. Type Inference Mechanics</h5>
+            <p>The modern <code>auto</code> keyword tells the compiler toolchain to automatically evaluate object types at compile time, eliminating redundant codebase declarations without compromising structural type safety.</p>`;
+}
+
+function GermanCppMemoryContent() {
+    return `<h5>1. Low-Level Address Pointers & Memory Boundaries</h5>
+            <p>Systems software engineering requires direct control over physical memory storage addresses. Direct access maximizes throughput but demands precise coordination of resource lifetimes.</p>
+            <p>Pointers store the exact memory addresses of variables. The <code>*</code> operator dereferences these addresses to inspect or modify values directly. Manual allocations using <code>new</code> and <code>delete</code> request space from the system heap, but require careful cleanup to avoid memory leaks.</p>
+            <h5>2. RAII Patterns & Modern Memory Protection Protocols</h5>
+            <p>Modern C++ eliminates raw memory vulnerabilities by implementing the Resource Acquisition Is Initialization (RAII) pattern. Smart pointers, like <code>std::unique_ptr</code> and <code>std::shared_ptr</code>, manage underlying resource lifecycles automatically and release allocated heap space as soon as variables fall out of scope.</p>`;
+}
+
+function GermanCppPolymorphismContent() {
+    return `<h5>1. Virtual Dispatch Frameworks & Late-Binding Engine Maps</h5>
+            <p>Object lifetimes are explicitly defined in C++. Developers manage data copy routines, memory move constraints, and virtual tables manually to preserve application speed and predictability.</p>
+            <p>Class destructors execute automatically when variables leave active scope, closing internal file handles smoothly. The <code>virtual</code> keyword configures late-binding runtimes, enabling the engine to look up and route call dispatches to child subclasses dynamically at runtime.</p>
+            <h5>2. Pure Virtual Enforcements & Compilation Interfaces</h5>
+            <p>Pure virtual declarations (<code>= 0</code>) establish abstract interfaces that force child modules to implement required methods. The <code>override</code> keyword explicitly marks subclass intentions, allowing the compiler to validate method signatures during build steps.</p>`;
+}
+
+function GermanSqlSchemaContent() {
+    return `<h5>1. Structured Schema Specifications & Data Integrity Rules</h5>
+            <p>Relational database engines store application variables inside structured tables organized into columns and rows, using integrity keys to validate relationships and protect data consistency.</p>
+            <p>SQL splits database operations into separate functional vocabularies. **DDL (Data Definition Language)** commands establish, alter, or drop tables and schema footprints (CREATE, ALTER, DROP). **DML (Data Manipulation Language)** commands insert, update, or fetch data rows inside those schemas (SELECT, INSERT, UPDATE).</p>
+            <h5>2. Primary and Foreign Constraints Engineering</h5>
+            <p>Primary keys guarantee uniqueness across row configurations, preventing data duplication. Foreign keys match cross-table fields to enforce relational integrity constraints across the database design.</p>`;
+}
+
+function GermanSqlTemplateQuiz() {
+    return [
+        { q:"Which parameter registers table schema structures inside relational engines?", opts:["DML Command Set","DDL System Definitions","TCL Statements Track","DCL Security Modifiers"], ans:1 },
+        { q:"What indexing component speeds column searches up cleanly?", opts:["Foreign Key link","B-Tree Index Map","Sequential Cluster scan","Cascading Constraint"], ans:1 },
+        { q:"Which command is used to add data values to rows cleanly?", opts:["ALTER","UPDATE","INSERT","CREATE"], ans:2 },
+        { q:"What does a primary key protect tables from?", opts:["Speed Loss","Data Duplication","Connection Failures","Null Entries"], ans:1 },
+        { q:"Which clause filters grouped queries accurately?", opts:["WHERE","HAVING","ORDER BY","LIMIT"], ans:1 },
+        { q:"What operator creates custom relational mappings?", opts:["JOIN","MERGE","UNION","INTERSECT"], ans:0 },
+        { q:"Which SQL sub-language creates indexes and tables?", opts:["DML","DDL","TCL","DCL"], ans:1 },
+        { q:"What does an INNER JOIN match values over?", opts:["Columns","Common Keys","Null Rows","Indices"], ans:1 },
+        { q:"Which property handles data rollbacks cleanly?", opts:["Isolation","Atomicity","Durability","Consistency"], ans:1 },
+        { q:"What does the EXPLAIN operator map out?", opts:["Bytecode","Query Execution Paths","Table Sizes","Connection Strings"], ans:1 }
+    ];
+}
+
+function GermanDsaTemplateQuiz() {
+    return [
+        { q:"What is the runtime scaling order of an optimized binary search logic track?", opts:["O(N) Complexity","O(N Log N) Bounds","O(Log N) Logarithmic Scale","O(1) Uniform Time"], ans:2 },
+        { q:"Which node structure tracks elements via backward and forward reference addresses?", opts:["Singly Linked List","Doubly Linked List Matrix","Contiguous Static Array","Binary Branch Node"], ans:1 },
+        { q:"What access sequence defines an optimized Queue pipeline?", opts:["LIFO","FIFO","Random Index","Dynamic Binary Tracking"], ans:1 },
+        { q:"What is the access complexity of looking up an index inside an array?", opts:["O(1)","O(N)","O(Log N)","O(N^2)"], ans:0 },
+        { q:"Which traversal style prints Binary Search Trees in sorted numerical order?", opts:["Pre-order","Post-order","In-order","Level-order"], ans:2 },
+        { q:"What standard data container backs Breadth-First Searches (BFS)?", opts:["Stack","Queue","HashMap","VTable Matrix"], ans:1 },
+        { q:"What operational approach caches overlapping subproblems dynamically?", opts:["Greedy Sorting","Dynamic Programming","Backtracking","Divide and Conquer"], ans:2 },
+        { q:"What algorithm looks up items linearly when values are unordered?", opts:["Binary Search","Linear Search","BFS","DFS"], ans:1 },
+        { q:"Which pointer approach optimizes search operations by checking array boundaries inward?", opts:["Sliding Window","Two-Pointer Technique","VTable Dispatch","Indirect Mapping"], ans:1 },
+        { q:"What reference object is added to decouple list insertions from root nodes?", opts:["Fast Runner","Dummy Head Node","Red-Black Balance","VTable Pointer"], ans:1 }
+    ];
+}
+
+function GermanSqlQueryingContent() {
+    return `<h5>1. Relational Table Joins and Mathematical Set Logic</h5>
+            <p>Enterprise analytics requires combining data split across multiple tables. SQL handles these relationships using relational set logic inside query pipelines.</p>
+            <p>An <code>INNER JOIN</code> filters records, returning rows only when keys match in both tables. A <code>LEFT JOIN</code> retains all source records from the left table and appends matching values from the right table, filling missing matches with <code>NULL</code> values.</p>
+            <h5>2. Summary Analytics via Grouping Layers</h5>
+            <p>The <code>GROUP BY</code> clause collapses matching row targets into single rows, allowing mathematical calculations (like COUNT, SUM, or AVG) to run across records. The <code>HAVING</code> modifier applies conditions directly to these grouped calculations.</p>`;
+}
+
+function GermanDsaArraysContent() {
+    return `<h5>1. Sequential Allocation Contiguity and Complexity Mechanics</h5>
+            <p>Linear structures store data items sequentially inside contiguous memory cells. Index adjustments allow efficient random access and element tracking across code paths.</p>
+            <p>Arrays provide fast constant time $O(1)$ read tracking via direct index lookups. However, adding or removing items requires shifting remaining elements in $O(n)$ time complexity to maintain sequential organization.</p>
+            <h5>2. Dynamic Search Window Mechanics</h5>
+            <p>Two-pointer strategies resolve search algorithms efficiently by moving boundary pointers inward, minimizing the need for extra data arrays. Sliding window configurations track contiguous blocks to analyze sequential sub-arrays smoothly.</p>`;
+}
+
+function GermanDsaLinkedListContent() {
+    return `<h5>1. Linked Memory Isolation and Allocation Lifecycles</h5>
+            <p>Linked lists replace strict, continuous memory allocations with standalone nodes distributed across application memory. Each node houses its independent variable values alongside explicit pointer link addresses.</p>
+            <p>Linked list structures enable fast constant time insertions or removals anywhere in the sequence, as updating a node requires modifying only its adjacent link references without shifting neighboring elements.</p>
+            <h5>2. Pointers Racing Mechanics (Runner Techniques)</h5>
+            <p>Fast-and-slow runner pointer chains navigate these lists at different speeds to identify cycles accurately. Adding a temporary dummy head node isolates tracking logic from edge case changes at the start of the list.</p>`;
+}
+
+function GermanDsaTreesContent() {
+    return `<h5>1. Structural Tree Organization Rules and Graph Factors</h5>
+            <p>Hierarchical tree structures organize data into layered parent-child configurations, avoiding long sequential array scans by narrowing down search paths step by step.</p>
+            <p>Binary Search Trees sort lower values down left branches and higher values down right paths. Balanced trees maintain logarithmic scaling, keeping lookup steps bound to $O(\\log n)$ efficiency.</p>
+            <h5>2. Deep-First Traversals vs Breadth-First Layer Searches</h5>
+            <p>An in-order tree traversal follows this sorting logic to visit and print node values sequentially in their correct numerical order. Breadth-First search algorithms process trees layer by layer, tracking wide relationships accurately using queues.</p>`;
+}
+</script>
+
+<script>
+    /* Dynamic execution parameter bindings */
+    const params   = new URLSearchParams(window.location.search);
+    const courseId = params.get('courseId') || '';
+    const urlTitle = params.get('title')    || 'Course';
+    const userRole = (localStorage.getItem('role') || 'STUDENT').toUpperCase();
+    const token    = localStorage.getItem('token');
+
+    if (!token) window.location.href = '/login';
+
+    const AUTH = { 'Authorization':'Bearer ' + token };
+    const AUTH_JSON = { 'Authorization':'Bearer ' + token, 'Content-Type':'application/json' };
+
+    /* Resolve course content: prioritize TITLE match because DB IDs auto-increment and change */
+	/* Resolve course content: keyword mapping ensures 100% accuracy regardless of DB ID shifts */
+	    function resolveCourseContent(id, title) {
+	        const target = (title || '').toString().trim().toLowerCase();
+	        
+	        // 1. Highest Priority: Smart Keyword Match
+	        if (target) {
+	            if (target.includes("java")) return COURSE_LIBRARY["2"];
+	            if (target.includes("react")) return COURSE_LIBRARY["3"];
+	            if (target.includes("c++") || target.includes("cpp")) return COURSE_LIBRARY["4"];
+	            if (target.includes("sql") || target.includes("database")) return COURSE_LIBRARY["6"];
+	            if (target.includes("algorithm") || target.includes("data structure") || target.includes("dsa")) return COURSE_LIBRARY["7"];
+	        }
+	        
+	        // 2. Fallback: Direct ID match
+	        if (COURSE_LIBRARY[id]) {
+	            return COURSE_LIBRARY[id];
+	        }
+	        
+	        return null;
+	    }
+
+    const resolvedCourse = resolveCourseContent(courseId, urlTitle);
+
+    /* Application state trees */
+    let quizData      = [];
+    let userAnswers   = {};
+    let quizSubmitted = false;
+    let currentPane   = 'content';
+    let currentTopic  = 0;
+    let assignmentsCache = [];
+    let assignmentsError = null;
+    let courseDataFromDB = null; // Stores actual course data from database
+
+    /* Admin dynamic build layout memory blocks */
+    let tempBuiltAssignmentPayload = null;
+
+    /* Milestones tracking data cache mappings */
+    const STAGE_KEY = `elms_progress_course_${courseId}`;
+    let completedMap = JSON.parse(localStorage.getItem(STAGE_KEY) || '{}');
+
+    /* ── DOM State Initializer Engine ── */
+    document.addEventListener('DOMContentLoaded', async () => {
+        const rb = document.getElementById('roleBadge');
+        rb.textContent = userRole;
+        rb.className = 'role-badge ' + (userRole === 'ADMIN' ? 'admin' : 'student');
+
+        // Fetch actual course data from database first
+        try {
+            const courseRes = await fetch(`/api/students/courses/${courseId}`, { headers: AUTH });
+            if (courseRes.ok) {
+                courseDataFromDB = await courseRes.json();
+            }
+        } catch(e) { console.log('Could not fetch course data:', e); }
+
+        const course = resolvedCourse;
+
+        if (course) {
+            // Use database values if available, fallback to COURSE_LIBRARY values
+            const displayTitle = courseDataFromDB?.title || course.meta.title;
+            const displaySemester = courseDataFromDB?.semester || course.meta.semester;
+            const displayCredits = courseDataFromDB?.credits || course.meta.credits;
+            const displayDesc = courseDataFromDB?.description || course.meta.desc;
+
+            document.getElementById('heroTitle').textContent = displayTitle;
+            document.getElementById('heroCourseId').textContent  = '#' + courseId;
+            document.getElementById('heroSemester').textContent  = displaySemester || 'N/A';
+            document.getElementById('heroCredits').textContent   = (displayCredits || '–') + ' Credits';
+            document.getElementById('heroDesc').textContent      = displayDesc || 'Explore the modules, complete the quiz, and review assignments.';
+            
+            buildNav(course.topics);
+            showTopic(0);
+        } else {
+            // No mapped content - still show course data from database if available
+            const displayTitle = courseDataFromDB?.title || urlTitle;
+            const displaySemester = courseDataFromDB?.semester || 'N/A';
+            const displayCredits = courseDataFromDB?.credits || '–';
+            const displayDesc = courseDataFromDB?.description || 'No description available.';
+
+            document.getElementById('heroTitle').textContent = displayTitle;
+            document.getElementById('heroCourseId').textContent  = '#' + courseId;
+            document.getElementById('heroSemester').textContent  = displaySemester;
+            document.getElementById('heroCredits').textContent   = displayCredits + ' Credits';
+            document.getElementById('heroDesc').textContent      = displayDesc;
+
+            document.getElementById('paneContent').innerHTML =
+                `<div class="state-box"><i class="fas fa-folder-open"></i>\n No content modules configured for this course yet. Assignments may still be available.</div>`;
+        }
+
+        loadAssignments();
+
+        if (userRole === 'ADMIN') {
+            document.getElementById('adminCreateSection').style.display = 'block';
+        }
+    });
+
+    function goBack() {
+        const backUrl = userRole === 'ADMIN' ? '/web/admin/courses' : '/student/dashboard';
+        window.location.href = backUrl;
+    }
+
+    /* ── Build navigation side menus ── */
+    function buildNav(topics) {
+        const list = document.getElementById('topicNavList');
+        let html = '';
+        topics.forEach((t, i) => {
+            let isLocked = false;
+            if (userRole !== 'ADMIN' && i > 0) {
+                if (!completedMap[i - 1]) {
+                    isLocked = true;
+                }
+            }
+
+            let statusIcon = '';
+            if (isLocked) {
+                statusIcon = '<i class="fas fa-lock status-icon"></i>';
+            } else if (completedMap[i]) {
+                statusIcon = '<i class="fas fa-check-circle status-icon"></i>';
+            }
+
+            html += `
+            <button class="topic-nav-btn" id="navTopic${i}" onclick="showTopic(${i})" ${isLocked ? 'disabled' : ''}>
+                <span class="tn-num">${i+1}</span>
+                <span class="tn-text">${t.label}</span>
+                ${statusIcon}
+            </button>`;
+        });
+        list.innerHTML = html;
+    }
+
+    /* ── Render selected topic parameters ── */
+    function showTopic(idx) {
+        currentTopic = idx;
+        currentPane  = 'content';
+        hideAllPanes();
+        
+        document.getElementById('paneContent').style.display = 'block';
+        document.getElementById('paneAssignInline').style.display = 'block';
+        document.getElementById('moduleProgressionActionBar').style.display = 'flex';
+
+        clearNavActive();
+        const btn = document.getElementById('navTopic' + idx);
+        if (btn) btn.classList.add('active');
+
+        const course = resolvedCourse;
+        if (!course || !course.topics[idx]) return;
+        
+        const topic = course.topics[idx];
+        let html = '';
+        
+        topic.sections.forEach(sec => {
+            let bulletsHtml = '';
+            if (sec.bullets && sec.bullets.length) {
+                bulletsHtml = '<ul>' + sec.bullets.map(b =>
+                    `<li><i class="fas fa-check-circle check-icon"></i>${b}</li>`).join('') + '</ul>';
+            }
+            const codeHtml = sec.code ? `<div class="code-block">${sec.code}</div>` : '';
+            const tipHtml  = sec.tip ? `<div class="tip-box"><strong>💡 Tip:</strong> ${sec.tip}</div>` : '';
+            const warnHtml = sec.warn ? `<div class="warn-box"><strong>⚠️ Note:</strong> ${sec.warn}</div>` : '';
+
+            html += `
+            <div class="topic-card">
+                <span class="chapter-badge">${sec.badge}</span>
+                <h4>${sec.title}</h4>
+                <div style="color: #cccccc;">${sec.body}</div>
+                ${bulletsHtml}
+                ${codeHtml}
+                ${tipHtml}
+                ${warnHtml}
+            </div>`;
+        });
+        
+        document.getElementById('paneContent').innerHTML = html;
+        
+        const actionSlot = document.getElementById('progressionActionSlot');
+        if (userRole === 'ADMIN') {
+            actionSlot.innerHTML = `<span class="admin-preview-text"><i class="fas fa-user-shield"></i> Admin Preview Mode</span>`;
+            document.getElementById('progressionInfoText').innerHTML = `<i class="fas fa-info-circle text-primary me-1"></i> Progression tracking and completion handlers are restricted for administrator accounts.`;
+        } else {
+            if (completedMap[idx]) {
+                actionSlot.innerHTML = `<span class="module-completed-text"><i class="fas fa-check-double"></i> Completed</span>`;
+                document.getElementById('progressionInfoText').innerHTML = `<i class="fas fa-info-circle text-success me-1"></i> You have verified this section's materials.`;
+            } else {
+                actionSlot.innerHTML = `
+                    <button type="button" class="btn-complete-module" onclick="commitChapterAsComplete()">
+                        <i class="fas fa-check-circle"></i> Mark as Complete
+                    </button>`;
+                document.getElementById('progressionInfoText').innerHTML = `<i class="fas fa-exclamation-circle text-warning me-1"></i> Finish checking all code samples above to complete this chapter.`;
+            }
+        }
+
+        renderAssignments('assignRendererInline');
+        window.scrollTo({ top: 0, behavior:'smooth' });
+    }
+
+    function commitChapterAsComplete() {
+        if (userRole === 'ADMIN') return;
+        
+        const course = resolvedCourse;
+        if (!course) return;
+
+        completedMap[currentTopic] = true;
+        localStorage.setItem(STAGE_KEY, JSON.stringify(completedMap));
+
+        buildNav(course.topics);
+
+        const nextTopicIndex = currentTopic + 1;
+        if (nextTopicIndex < course.topics.length) {
+            showTopic(nextTopicIndex);
+        } else {
+            alert("🎉 Congratulations! You have completed all course modules. Your Course Certificate is now ready to download!");
+            showPane('certificate');
+        }
+    }
+
+	/* ── UI Logic: Fixed to avoid NullPointer Errors ── */
+	window.showPane = function(pane) {
+	    currentPane = pane;
+	    hideAllPanes();
+	    clearNavActive();
+
+	    // Only attempt to show/update if the element exists in the DOM
+	    if (pane === 'quiz') {
+	        const quizPane = document.getElementById('paneQuiz');
+	        if (quizPane) {
+	            quizPane.style.display = 'block';
+	            renderQuiz();
+	        }
+	    } else if (pane === 'assign') {
+	        const assignPane = document.getElementById('paneAssign');
+	        if (assignPane) {
+	            assignPane.style.display = 'block';
+	            renderAssignments('assignRenderer');
+	        }
+	        const navAssign = document.getElementById('navAssign');
+	        if (navAssign) navAssign.classList.add('active');
+	    } else if (pane === 'certificate') {
+	        const certPane = document.getElementById('paneCertificate');
+	        if (certPane) {
+	            certPane.style.display = 'block';
+	            renderCertificatePane();
+	        }
+	        const navCert = document.getElementById('navCert');
+	        if (navCert) navCert.classList.add('active');
+	    }
+	    window.scrollTo({ top: 0, behavior:'smooth' });
+	}
+
+	function hideAllPanes() {
+	    // Safely hide only if elements exist
+	    const panes = ['paneContent', 'paneQuiz', 'paneAssign', 'paneCertificate', 'moduleProgressionActionBar'];
+	    panes.forEach(id => {
+	        const el = document.getElementById(id);
+	        if (el) el.style.display = 'none';
+	    });
+	    const inline = document.getElementById('paneAssignInline');
+	    if (inline) inline.style.display = 'none';
+	}
+
+	function clearNavActive() {
+	    // Safely remove active classes
+	    document.querySelectorAll('.topic-nav-btn').forEach(b => b.classList.remove('active'));
+	}
+
+    /* ── FIXED! Dynamic Questionnaire Launcher (Handles SQL Escapes and Nulls) ── */
+	window.launchAssignmentAssessmentQuiz = async function(assignmentId) {
+	    const targetRecord = assignmentsCache.find(a => a.assignmentId == assignmentId);
+	    if (!targetRecord) return alert("Assignment not found.");
+
+	    // Block if past due (date-only comparison — same as backend)
+	    if (targetRecord.dueDate && !targetRecord._submitted) {
+	        const today  = new Date(); today.setHours(0,0,0,0);
+	        const dueDay = new Date(targetRecord.dueDate + 'T00:00:00');
+	        if (dueDay < today) {
+	            alert("⏰ This assignment is past its due date and can no longer be taken.");
+	            return;
+	        }
+	    }
+
+	    window._currentAssignmentId = assignmentId;
+	    document.getElementById('quizPaneTitle').innerHTML = `<i class="fas fa-pen text-cyan"></i> ${userRole === 'ADMIN' ? 'Preview' : 'Quiz'}: ${targetRecord.title}`;
+
+	    // Check if student already submitted
+	    if (userRole === 'STUDENT') {
+	        const sid = parseInt(localStorage.getItem('studentId') || '0');
+	        try {
+	            const retakeRes = await fetch(`/api/assignments/retake-info/${assignmentId}/${sid}`, { headers: AUTH });
+	            if (retakeRes.ok) {
+	                const rd = await retakeRes.json();
+	                if (rd.passed) {
+	                    quizData = [];
+	                    showPane('quiz');
+	                    const gradeCol = (rd.grade==='A+'||rd.grade==='A') ? 'var(--green)' : (rd.grade==='B+'||rd.grade==='B') ? 'var(--cyan)' : rd.grade==='C' ? 'var(--orange)' : 'var(--muted)';
+	                    document.getElementById('quizRenderer').innerHTML = `<div class="score-box"><div style="font-size:0.8rem;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:8px;">Quiz Passed ✓</div><div class="score-big" style="color:${gradeCol};">${rd.latestScore}%</div><div style="color:${gradeCol};font-weight:800;font-size:1.2rem;margin-top:6px;">Grade: ${rd.grade}</div><div style="color:var(--muted);margin-top:8px;font-size:0.82rem;">You have passed this quiz. Well done!</div></div>`;
+	                    return;
+	                }
+	                if (rd.attempts > 0 && rd.retriesLeft <= 0) {
+	                    quizData = [];
+	                    showPane('quiz');
+	                    document.getElementById('quizRenderer').innerHTML = `<div class="score-box" style="border-color:var(--red);"><div style="font-size:0.8rem;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:8px;">Quiz Failed — No Retakes Left</div><div class="score-big" style="color:var(--red);">F</div><div style="color:var(--red);font-weight:700;margin-top:6px;">Score: ${rd.latestScore}%</div><div style="color:var(--muted);margin-top:8px;font-size:0.82rem;">You have used all ${rd.maxRetakes} retake attempts.</div></div>`;
+	                    return;
+	                }
+	                window._currentRetakeCount = rd.attempts || 0;
+	                window._retriesLeft = rd.retriesLeft ?? 2;
+	                window._showRetakeBanner = rd.attempts > 0;
+	                window._prevScore = rd.latestScore || 0;
+	            }
+	        } catch(e) { console.log(e); }
+	    }
+
+	    try {
+            // Handle NULL or empty description cases safely
+            if (!targetRecord.description || targetRecord.description.trim() === "NULL" || targetRecord.description.trim() === "") {
+                quizData = []; 
+            } else {
+                // Clean the string to handle potential extra quotes from DB
+                let cleanDesc = targetRecord.description.replace(/\\"/g, '"').replace(/^"|"$/g, '');
+                quizData = JSON.parse(cleanDesc);
+            }
+	    } catch(e) {
+	        console.error("Parse Error:", e);
+	        quizData = [];
+	    }
+
+        if (quizData.length === 0) {
+            alert("This assignment has no questions saved in the database.");
+        }
+
+	    // This call is crucial: it triggers showPane('quiz'), which triggers renderQuiz()
+	    showPane('quiz'); 
+	}
+    
+    function selectOpt(qi, oi) {
+        if (userRole === 'ADMIN') return;
+        userAnswers[qi] = oi;
+        // Update UI
+        document.querySelectorAll(`.quiz-q[data-qi="${qi}"] .opt`).forEach((el, idx) => {
+            el.classList.toggle('selected', idx === oi);
+        });
+    }
+
+    function submitQuiz() {
+        if (userRole === 'ADMIN') return;
+        if (Object.keys(userAnswers).length < quizData.length) {
+            alert('Please answer all questions before submitting.');
+            return;
+        }
+        quizSubmitted = true;
+        let correct = 0;
+        quizData.forEach((item, qi) => {
+            if (userAnswers[qi] === item.ans) correct++;
+        });
+        const score = Math.round((correct / quizData.length) * 100);
+        
+        // Submit to backend
+        const studentId = parseInt(localStorage.getItem('studentId') || '0');
+        const currentAssignmentId = window._currentAssignmentId;
+        if (currentAssignmentId && studentId) {
+            fetch('/api/assignments/submit-quiz', {
+                method: 'POST',
+                headers: { ...AUTH_JSON },
+                body: JSON.stringify({ assignmentId: currentAssignmentId, studentId: studentId, score: score, answer: JSON.stringify(userAnswers) })
+            }).then(r => r.json()).then(data => {
+                console.log('Quiz submitted:', data);
+                if (data.status === 'past_due') {
+                    quizSubmitted = false;
+                    document.getElementById('quizRenderer').innerHTML = `
+                        <div class="score-box" style="border-color:var(--red);">
+                            <i class="fas fa-clock" style="font-size:2.5rem;color:var(--red);margin-bottom:12px;display:block;"></i>
+                            <div style="font-size:0.8rem;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:8px;">Submission Blocked</div>
+                            <div style="color:var(--red);font-weight:700;font-size:0.95rem;margin-top:4px;">⏰ This assignment is past its due date.</div>
+                            <button onclick="showPane('assign')" style="margin-top:16px;background:var(--card2);color:var(--muted);border:1px solid var(--border);border-radius:9px;padding:9px 22px;font-size:0.82rem;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Assignments
+                            </button>
+                        </div>`;
+                    return;
+                }
+                // Update retake state from response
+                if (data.retriesLeft !== undefined) window._retriesLeft = data.retriesLeft;
+                if (data.retakeCount !== undefined) window._currentRetakeCount = data.retakeCount + 1;
+                window._prevScore = score;
+                renderQuiz(); // Re-render with updated retake info
+            }).catch(e => { console.error(e); renderQuiz(); });
+        } else {
+            renderQuiz();
+        }
+    }
+
+    function retakeQuiz() {
+        // Reset for retake
+        userAnswers   = {};
+        quizSubmitted = false;
+        renderQuiz();
+    }
+	
+    /* ── Quiz Renderer: Admin = preview with answers shown, Student = interactive ── */
+	function renderQuiz() {
+	    const renderer = document.getElementById('quizRenderer');
+	    
+	    if (!Array.isArray(quizData) || quizData.length === 0) {
+	        renderer.innerHTML = '<div class="state-box">No question data detected for this assignment.</div>';
+	        return;
+	    }
+	    
+	    if (userRole === 'ADMIN') {
+	        // ADMIN: Preview mode with correct answers highlighted
+	        renderer.innerHTML = quizData.map((item, qi) => {
+	            let optionsHTML = item.opts.map((opt, oi) => {
+	                let isCorrect = (oi === item.ans);
+	                let adminClass = isCorrect ? 'correct disabled-admin' : 'disabled-admin';
+	                return `<div class="opt ${adminClass}">
+	                    <input type="radio" disabled ${isCorrect ? 'checked' : ''}>
+	                    <label style="${isCorrect ? 'font-weight:700;' : ''}">${opt} ${isCorrect ? '<i class="fas fa-check-circle ms-2"></i>' : ''}</label>
+	                </div>`;
+	            }).join('');
+	            return `<div class="quiz-q" data-qi="${qi}">
+	                <div class="q-num">Question ${qi + 1} of ${quizData.length}</div>
+	                <div class="q-text">${item.q}</div>
+	                <div class="opt-wrapper">${optionsHTML}</div>
+	            </div>`;
+	        }).join('');
+	    } else {
+	        // STUDENT: Interactive quiz mode
+	        if (quizSubmitted) {
+	            let correct = 0;
+	            quizData.forEach((item, qi) => { if (userAnswers[qi] === item.ans) correct++; });
+	            const score = Math.round((correct / quizData.length) * 100);
+	            // Grade display
+	            let grade, gradeCol;
+	            if (score >= 90)      { grade = 'A+'; gradeCol = 'var(--green)'; }
+	            else if (score >= 80) { grade = 'A';  gradeCol = 'var(--green)'; }
+	            else if (score >= 70) { grade = 'B+'; gradeCol = 'var(--cyan)'; }
+	            else if (score >= 60) { grade = 'B';  gradeCol = 'var(--blue)'; }
+	            else if (score >= 50) { grade = 'C';  gradeCol = 'var(--orange)'; }
+	            else                  { grade = 'F';  gradeCol = 'var(--red)'; }
+	            const failed = score < 50;
+	            const retriesLeft = window._retriesLeft ?? 2;
+	            let resultHTML = `<div class="score-box mb-4" style="border-color:${gradeCol};">
+	                <div style="font-size:0.8rem;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:8px;">Your Score</div>
+	                <div class="score-big" style="color:${gradeCol};">${score}%</div>
+	                <div style="color:${gradeCol};font-weight:800;font-size:1.1rem;margin-top:4px;">Grade: ${grade}</div>
+	                <div style="color:var(--muted);margin-top:8px;">${correct} of ${quizData.length} correct</div>
+	                ${failed
+	                    ? `<div style="margin-top:10px;color:var(--red);font-size:0.82rem;font-weight:700;"><i class="fas fa-times-circle me-1"></i>FAILED — Score below 50%</div>
+	                       ${retriesLeft > 0
+	                           ? `<button onclick="retakeQuiz()" style="margin-top:14px;background:linear-gradient(135deg,var(--orange),#b45309);color:#fff;border:none;border-radius:9px;padding:10px 28px;font-weight:700;font-size:0.85rem;cursor:pointer;"><i class="fas fa-redo me-2"></i>Retake Quiz (${retriesLeft} attempt${retriesLeft !== 1 ? 's' : ''} left)</button>`
+	                           : `<div style="margin-top:10px;color:var(--red);font-size:0.8rem;font-weight:700;background:rgba(239,68,68,0.1);border-radius:8px;padding:8px 16px;"><i class="fas fa-ban me-1"></i>No retakes remaining. Maximum limit reached.</div>`
+	                       }`
+	                    : `<div style="margin-top:10px;color:var(--green);font-size:0.82rem;font-weight:700;"><i class="fas fa-check-circle me-1"></i>Passed!</div>`
+	                }
+	            </div>`;
+	            resultHTML += quizData.map((item, qi) => {
+	                let optionsHTML = item.opts.map((opt, oi) => {
+	                    let isCorrect = (oi === item.ans);
+	                    let isSelected = (userAnswers[qi] === oi);
+	                    let cls = isCorrect ? 'correct' : (isSelected ? 'wrong' : '');
+	                    return `<div class="opt ${cls}">
+	                        <input type="radio" disabled ${isSelected ? 'checked' : ''}>
+	                        <label>${opt} ${isCorrect ? '<i class="fas fa-check-circle ms-2" style="color:var(--green);"></i>' : ''}</label>
+	                    </div>`;
+	                }).join('');
+	                return `<div class="quiz-q" data-qi="${qi}">
+	                    <div class="q-num">Question ${qi + 1}</div>
+	                    <div class="q-text">${item.q}</div>
+	                    ${optionsHTML}
+	                </div>`;
+	            }).join('');
+	            renderer.innerHTML = resultHTML;
+	        } else {
+	            renderer.innerHTML = quizData.map((item, qi) => {
+	                let optionsHTML = item.opts.map((opt, oi) => {
+	                    let isSelected = (userAnswers[qi] === oi);
+	                    return `<div class="opt ${isSelected ? 'selected' : ''}" onclick="selectOpt(${qi},${oi})">
+	                        <input type="radio" name="q${qi}" ${isSelected ? 'checked' : ''}>
+	                        <label>${opt}</label>
+	                    </div>`;
+	                }).join('');
+	                return `<div class="quiz-q" data-qi="${qi}">
+	                    <div class="q-num">Question ${qi + 1} of ${quizData.length}</div>
+	                    <div class="q-text">${item.q}</div>
+	                    ${optionsHTML}
+	                </div>`;
+	            }).join('');
+	            renderer.innerHTML += `<div class="text-center mt-4"><button onclick="submitQuiz()" style="background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border:none;border-radius:10px;padding:12px 32px;font-weight:700;font-size:0.9rem;cursor:pointer;"><i class="fas fa-paper-plane me-2"></i>Submit Quiz</button></div>`;
+	        }
+	    }
+	}
+
+    /* ── Assignments List Rendering Layer ── */
+    function renderAssignments(targetId) {
+        const container = document.getElementById(targetId);
+        if (!container) return;
+        if (assignmentsError) {
+            container.innerHTML = `<div class="state-box"><i class="fas fa-exclamation-triangle" style="color:var(--orange);"></i>\n Could not load assignments.</div>`;
+            return;
+        }
+        if (!assignmentsCache || !assignmentsCache.length) {
+            if (!assignmentsCache) {
+                container.innerHTML = '<div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading assignments…</div>';
+                return;
+            }
+            container.innerHTML = '<div class="state-box"><i class="fas fa-clipboard-list"></i>No assignments created for this course yet.</div>';
+            return;
+        }
+
+        // Check if student completed all topics (only needed for first assignment gate)
+        const course = resolvedCourse;
+        const allTopicsCompleted = course ? course.topics.every((_, i) => completedMap[i]) : false;
+        /* If no mapped content (no topics), treat as completed so no assignment is gated */
+        const topicsExist = course && course.topics.length > 0;
+
+        let html = '';
+        assignmentsCache.forEach((a, index) => {
+            const due = a.dueDate ? new Date(a.dueDate).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : 'TBD';
+            
+            if (userRole === 'ADMIN') {
+                html += `
+                <div class="assign-card" onclick="launchAssignmentAssessmentQuiz(${a.assignmentId})">
+                    <div>
+                        <div class="assign-id">Assignment #${a.assignmentId}</div>
+                        <div class="assign-title"><i class="fas fa-file-signature text-cyan me-1"></i> ${a.title || 'Untitled'}</div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <span class="due-badge"><i class="fas fa-calendar-alt me-1"></i>Due: ${due}</span>
+                        <span class="score-badge"><i class="fas fa-star me-1"></i>Max: ${a.maxScore ?? '–'}</span>
+                    </div>
+                </div>`;
+            } else {
+                // STUDENT mode:
+                // Only the FIRST assignment (index 0) requires all topics to be completed first.
+                // All subsequent assignments are freely available once enrolled.
+                const isFirstLocked = index === 0 && topicsExist && !allTopicsCompleted;
+
+                if (isFirstLocked) {
+                    html += `
+                    <div class="assign-card" style="opacity:0.5;cursor:not-allowed;">
+                        <div>
+                            <div class="assign-id">Assignment #${a.assignmentId}</div>
+                            <div class="assign-title"><i class="fas fa-lock me-1" style="color:var(--muted);"></i> ${a.title || 'Untitled'}</div>
+                            <div style="font-size:0.75rem;color:var(--orange);margin-top:4px;"><i class="fas fa-exclamation-circle me-1"></i>Mark all course chapters as complete to unlock this quiz</div>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span class="due-badge"><i class="fas fa-calendar-alt me-1"></i>Due: ${due}</span>
+                            <span class="score-badge"><i class="fas fa-star me-1"></i>Max: ${a.maxScore ?? '–'}</span>
+                        </div>
+                    </div>`;
+                } else {
+                    // Check if past due (date-only comparison — matches backend)
+                    const today    = new Date(); today.setHours(0,0,0,0);
+                    const dueDay   = a.dueDate ? new Date(a.dueDate + 'T00:00:00') : null;
+                    const isPastDue = dueDay && dueDay < today;
+
+                    let actionBtn;
+                    if (a._submitted) {
+                        actionBtn = `<button disabled style="background:rgba(45,181,93,0.15);color:var(--green);border:1px solid rgba(45,181,93,0.4);border-radius:8px;padding:8px 18px;font-size:0.78rem;font-weight:700;cursor:default;"><i class="fas fa-check-double me-1"></i>Completed${a._score != null ? ' · ' + a._score + '%' : ''}</button>`;
+                    } else if (isPastDue) {
+                        actionBtn = `<button disabled style="background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:8px 18px;font-size:0.78rem;font-weight:700;cursor:not-allowed;"><i class="fas fa-clock me-1"></i>Past Due</button>`;
+                    } else {
+                        actionBtn = `<button onclick="launchAssignmentAssessmentQuiz(${a.assignmentId})" style="background:linear-gradient(135deg,var(--cyan),var(--blue));color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-pen me-1"></i>Take Quiz</button>`;
+                    }
+
+                    html += `
+                    <div class="assign-card" style="${isPastDue && !a._submitted ? 'opacity:0.7;' : ''}">
+                        <div>
+                            <div class="assign-id">Assignment #${a.assignmentId}</div>
+                            <div class="assign-title"><i class="fas fa-file-signature text-cyan me-1"></i> ${a.title || 'Untitled'}</div>
+                            ${isPastDue && !a._submitted ? `<div style="font-size:0.75rem;color:var(--red);margin-top:4px;"><i class="fas fa-exclamation-circle me-1"></i>Submission closed — due date has passed</div>` : ''}
+                        </div>
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <span class="due-badge"><i class="fas fa-calendar-alt me-1"></i>Due: ${due}</span>
+                            <span class="score-badge"><i class="fas fa-star me-1"></i>Max: ${a.maxScore ?? '–'}</span>
+                            ${actionBtn}
+                        </div>
+                    </div>`;
+                }
+            }
+        });
+        container.innerHTML = html;
+    }
+
+    async function loadAssignments() {
+        assignmentsError = null;
+        try {
+            const res  = await fetch(`/api/assignments/course/${courseId}`, { headers: AUTH });
+            if (!res.ok) throw new Error('API ' + res.status);
+            assignmentsCache = await res.json();
+
+            // For students, pre-check which assignments are already submitted
+            if (userRole === 'STUDENT') {
+                const sid = parseInt(localStorage.getItem('studentId') || '0');
+                await Promise.all(assignmentsCache.map(async (a) => {
+                    try {
+                        const r = await fetch(`/api/assignments/retake-info/${a.assignmentId}/${sid}`, { headers: AUTH });
+                        if (r.ok) {
+                            const d = await r.json();
+                            a._passed      = d.passed === true;
+                            a._failed      = d.attempts > 0 && !d.passed;
+                            a._submitted   = a._passed || (d.attempts > 0 && d.retriesLeft <= 0);
+                            a._retriesLeft = d.retriesLeft ?? 2;
+                            a._grade       = d.grade || null;
+                            a._score       = d.latestScore ?? null;
+                        }
+                    } catch(_) {}
+                }));
+            }
+
+            renderAssignments('assignRendererInline');
+            renderAssignments('assignRenderer');
+        } catch(e) {
+            console.error(e);
+            assignmentsCache = [];
+            assignmentsError = e;
+            renderAssignments('assignRendererInline');
+            renderAssignments('assignRenderer');
+        }
+    }
+
+    /* ── STEP 1: Process and Validate Assignment Metadata to Launch the Form Builder ── */
+    window.initiateQuizBuilder = function() {
+        const title    = document.getElementById('aTitle').value.trim();
+        const maxScore = document.getElementById('aMaxScore').value;
+        const dueDate  = document.getElementById('aDueDate').value;
+        const flash    = document.getElementById('assignFlash');
+
+        if (!title || !maxScore || !dueDate) {
+            flash.innerHTML = '<div class="flash error"><i class="fas fa-exclamation-circle me-1"></i>All base fields are required to build a dynamic assignment schema.</div>';
+            return;
+        }
+
+        const activeParsedCourseId = parseInt(courseId);
+        if (isNaN(activeParsedCourseId)) {
+            flash.innerHTML = '<div class="flash error"><i class="fas fa-exclamation-circle me-1"></i>Invalid course metadata target.</div>';
+            return;
+        }
+
+        // Cache base assignment data model inside intermediate global variable memory
+        tempBuiltAssignmentPayload = { title, maxScore: parseInt(maxScore), dueDate, courseId: activeParsedCourseId };
+
+        // Render dynamic form fields matching exactly 10 questions requirement layout
+        const targetFormNode = document.getElementById('questionsFormFieldsContainer');
+        let dynamicFormFieldsHTML = '';
+        
+        for (let i = 1; i <= 10; i++) {
+            dynamicFormFieldsHTML += `
+                <div class="q-builder-card shadow-sm border-0 mb-3">
+                    <label class="f-label text-green fw-bold">Question Blueprint #${i} Statement *</label>
+                    <input type="text" class="f-input mb-3" id="qb_q_${i}" placeholder="Enter question number ${i}..." required>
+                    
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="f-label text-muted">Option A *</label>
+                            <input type="text" class="f-input mb-2" id="qb_opt_a_${i}" placeholder="Option A" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="f-label text-muted">Option B *</label>
+                            <input type="text" class="f-input mb-2" id="qb_opt_b_${i}" placeholder="Option B" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="f-label text-muted">Option C *</label>
+                            <input type="text" class="f-input mb-2" id="qb_opt_c_${i}" placeholder="Option C" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="f-label text-muted">Option D *</label>
+                            <input type="text" class="f-input mb-2" id="qb_opt_d_${i}" placeholder="Option D" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-2 col-md-4">
+                        <label class="f-label text-warning fw-bold">Select Correct Answer Index *</label>
+                        <select class="form-select form-select-sm bg-dark text-white border-secondary rounded-3" id="qb_ans_${i}" required>
+                            <option value="0">Option A</option>
+                            <option value="1">Option B</option>
+                            <option value="2">Option C</option>
+                            <option value="3">Option D</option>
+                        </select>
+                    </div>
+                </div>`;
+        }
+
+        targetFormNode.innerHTML = dynamicFormFieldsHTML;
+        
+        // Adjust display visibility wrappers
+        document.getElementById('baseAssignFormContainer').style.display = 'none';
+        document.getElementById('quizBuilderFormContainer').style.display = 'block';
+        document.getElementById('quizBuilderFormContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelQuizBuilder() {
+        tempBuiltAssignmentPayload = null;
+        document.getElementById('baseAssignFormContainer').style.display = 'block';
+        document.getElementById('quizBuilderFormContainer').style.display = 'none';
+    }
+
+    /* ── STEP 2: Package the Built Quiz Parameters and Save the Data Locally + Alert ── */
+    window.finalizeAssignmentSubmission = async function() {
+        const flash = document.getElementById('assignFlash');
+
+        if (!tempBuiltAssignmentPayload) {
+            alert("Base payload data is missing. Please restart execution.");
+            cancelQuizBuilder();
+            return;
+        }
+
+        // Loop and parse all 10 dynamically mapped questionnaire inputs manually to ensure correctness
+        const customQuestionsCollection = [];
+        for (let i = 1; i <= 10; i++) {
+            const questionText = document.getElementById(`qb_q_${i}`).value.trim();
+            const optA = document.getElementById(`qb_opt_a_${i}`).value.trim();
+            const optB = document.getElementById(`qb_opt_b_${i}`).value.trim();
+            const optC = document.getElementById(`qb_opt_c_${i}`).value.trim();
+            const optD = document.getElementById(`qb_opt_d_${i}`).value.trim();
+            const selectedCorrectAnswerIndex = parseInt(document.getElementById(`qb_ans_${i}`).value);
+
+            // Manual validation check to block unpopulated fields cleanly
+            if (!questionText || !optA || !optB || !optC || !optD) {
+                alert(`Please completely fill out all parameters for Question #${i}.`);
+                return;
+            }
+
+            customQuestionsCollection.push({
+                q: questionText,
+                opts: [optA, optB, optC, optD],
+                ans: selectedCorrectAnswerIndex
+            });
+        }
+
+        // Inject the freshly processed compilation map right inside current memory registry structures inside the page itself
+        const targetCourseRef = resolvedCourse;
+        if (targetCourseRef) {
+            targetCourseRef.quiz = customQuestionsCollection;
+            quizData = customQuestionsCollection; // Sync state trackers instantly
+        }
+
+        // Assemble unified structural model to submit straight to backend database mapping routes
+        const combinedPersistencePayload = {
+            title: tempBuiltAssignmentPayload.title,
+            maxScore: tempBuiltAssignmentPayload.maxScore,
+            dueDate: tempBuiltAssignmentPayload.dueDate,
+            courseId: tempBuiltAssignmentPayload.courseId,
+            description: JSON.stringify(customQuestionsCollection) 
+        };
+
+        try {
+            const res = await fetch('/api/assignments', {
+                method:'POST', headers: AUTH_JSON, body: JSON.stringify(combinedPersistencePayload)
+            });
+            if (!res.ok) throw new Error('API server rejected layout synchronization loops.');
+
+            // SUCCESS HANDLER POPUP
+            alert("Assignment created successfully!");
+
+            // Clear baseline input trackers
+            document.getElementById('aTitle').value    = '';
+            document.getElementById('aMaxScore').value = '';
+            document.getElementById('aDueDate').value  = '';
+            
+            // Clean view structures visibility matrices
+            cancelQuizBuilder();
+            loadAssignments();
+        } catch(e) {
+            alert("Dynamic tracking failed to persist cleanly into the database layer: " + e.message);
+        }
+    }
+</script>
+
+<!-- ══════════════════════════════════════════════════
+     jsPDF — Used for Certificate PDF Generation
+     ══════════════════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   COURSE CERTIFICATE — Render Pane + PDF Download
+   ═══════════════════════════════════════════════════════════════════════ */
+
+async function renderCertificatePane() {
+    const pane = document.getElementById('paneCertificate');
+    if (!pane) return;
+
+    const course         = resolvedCourse;
+    const totalTopics    = course ? course.topics.length : 0;
+    const completedCount = course ? course.topics.filter((_, i) => completedMap[i]).length : 0;
+    const topicsDone     = totalTopics === 0 || completedCount === totalTopics;
+    const progressPct    = totalTopics > 0 ? Math.round((completedCount / totalTopics) * 100) : 100;
+
+    const courseTitle   = course ? course.meta.title   : (urlTitle || 'Course');
+    const courseSem     = course ? course.meta.semester : '–';
+    const courseCredits = course ? course.meta.credits  : '–';
+    const studentName   = localStorage.getItem('name') || localStorage.getItem('studentName') || 'Student';
+    const issuedDate    = new Date().toLocaleDateString('en-US',{ year:'numeric', month:'long', day:'numeric' });
+
+    // ── Check if all quizzes (assignments) in this course are passed via API ──
+    let quizStatus = { allPassed: true, total: 0, passed: 0, grade: '–', avgScore: 0, locked: false };
+    let gradeLabel  = '–';
+    let gradeScore  = 0;
+    const sid = parseInt(localStorage.getItem('studentId') || '0');
+
+    if (userRole === 'STUDENT' && sid && courseId) {
+        try {
+            const qRes = await fetch(`/api/assignments/course/${courseId}/certificate/${sid}`, { headers: AUTH });
+            if (qRes.ok) {
+                quizStatus = await qRes.json();
+                gradeLabel = quizStatus.grade || '–';
+                gradeScore = quizStatus.avgScore || 0;
+            }
+        } catch(_) {}
+
+        // Also try to get CGPA/letter grade if available
+        try {
+            const gRes = await fetch(`/api/analytics/gpa/student/${sid}`, { headers: AUTH });
+            if (gRes.ok) {
+                const gData = await gRes.json();
+                if (gData.letterGrade) gradeLabel = gData.letterGrade;
+                if (gData.cgpa) gradeScore = Number(gData.cgpa).toFixed(1);
+            }
+        } catch(_) {}
+    }
+
+    // ── Locked: topics not all done ──
+    if (userRole !== 'ADMIN' && !topicsDone) {
+        pane.innerHTML = `
+        <div class="cert-locked-box">
+            <i class="fas fa-lock lock-icon"></i>
+            <h5>Certificate Locked</h5>
+            <p>Complete <strong>all ${totalTopics} course module${totalTopics !== 1 ? 's' : ''}</strong> to unlock your certificate.</p>
+            <div class="cert-progress-bar-wrap">
+                <div class="cert-progress-bar-fill" style="width:${progressPct}%"></div>
+            </div>
+            <div class="cert-progress-label">${completedCount} of ${totalTopics} modules completed (${progressPct}%)</div>
+        </div>`;
+        return;
+    }
+
+    // ── Locked: not all quizzes passed ──
+    if (userRole !== 'ADMIN' && quizStatus.total > 0 && quizStatus.locked) {
+        const quizPct = Math.round((quizStatus.passed / quizStatus.total) * 100);
+        pane.innerHTML = `
+        <div class="cert-locked-box">
+            <i class="fas fa-lock lock-icon"></i>
+            <h5>Certificate Locked — Quizzes Incomplete</h5>
+            <p>You must <strong>pass all ${quizStatus.total} quiz${quizStatus.total !== 1 ? 'zes' : ''}</strong> in this course (score ≥ 50%) to unlock your certificate.</p>
+            <div class="cert-progress-bar-wrap">
+                <div class="cert-progress-bar-fill" style="width:${quizPct}%"></div>
+            </div>
+            <div class="cert-progress-label">${quizStatus.passed} of ${quizStatus.total} quizzes passed (${quizPct}%)</div>
+            <div style="margin-top:14px;font-size:0.8rem;color:var(--orange);">
+                <i class="fas fa-exclamation-circle me-1"></i>
+                Failed quizzes can be retaken up to 2 times. Go to the Assignments section.
+            </div>
+        </div>`;
+        return;
+    }
+
+    /* ── Unlocked / Admin Preview ── */
+    const displayName  = userRole === 'ADMIN' ? 'Sample Student' : studentName;
+    const adminBanner  = userRole === 'ADMIN'
+        ? `<div style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:10px;
+                       padding:11px 18px;margin-bottom:22px;color:var(--purple);font-weight:700;font-size:0.82rem;">
+               <i class="fas fa-user-shield me-2"></i>Admin Preview Mode — Certificate template shown below
+           </div>`
+        : `<div class="cert-success-banner">
+               <i class="fas fa-check-circle" style="font-size:1.3rem;"></i>
+               <span>Congratulations! You have successfully completed all course modules. Your certificate is ready!</span>
+           </div>`;
+
+    pane.innerHTML = `
+    <div class="cert-outer-wrapper">
+        ${adminBanner}
+
+        <!-- Visual Certificate Card -->
+        <div class="cert-card" id="certificateCard">
+            <div class="cert-corner tl"></div>
+            <div class="cert-corner tr"></div>
+            <div class="cert-corner bl"></div>
+            <div class="cert-corner br"></div>
+
+            <div class="cert-brand">ELM<span>S</span></div>
+            <div class="cert-tagline">E-Learning Management System</div>
+
+            <div class="cert-badge-row">
+                <div class="cert-medal">🏆</div>
+            </div>
+
+            <div style="display:inline-block;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.35);
+                        border-radius:20px;padding:4px 18px;font-size:0.7rem;font-weight:800;
+                        color:var(--yellow);letter-spacing:2px;text-transform:uppercase;margin-bottom:24px;">
+                Certificate of Completion
+            </div>
+
+            <div class="cert-presents">This is to proudly certify that</div>
+            <div class="cert-name">${displayName}</div>
+            <div class="cert-name-line"></div>
+
+            <div class="cert-completed-text">has successfully completed all modules and assessments of the course</div>
+            <div class="cert-course-name">${courseTitle}</div>
+            <div class="cert-sub-text">
+                demonstrating outstanding commitment, technical skill, and a thorough understanding of the subject matter throughout the programme.
+            </div>
+
+            <hr class="cert-divider">
+
+            <div class="cert-meta-row">
+                <div class="cert-meta-item">
+                    <div class="cert-meta-label">Date Issued</div>
+                    <div class="cert-meta-value">${issuedDate}</div>
+                </div>
+                <div class="cert-meta-item">
+                    <div class="cert-meta-label">Semester</div>
+                    <div class="cert-meta-value">${courseSem}</div>
+                </div>
+                <div class="cert-meta-item">
+                    <div class="cert-meta-label">Credits</div>
+                    <div class="cert-meta-value">${courseCredits}</div>
+                </div>
+                <div class="cert-meta-item">
+                    <div class="cert-meta-label">Grade</div>
+                    <div class="cert-meta-value" style="color:var(--green);font-size:1rem;">${gradeLabel}${gradeScore ? ' (CGPA ' + gradeScore + ')' : ''}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download Button -->
+        <div style="text-align:center;">
+            <button class="btn-download-cert"
+                    onclick="downloadCertificateAsPDF(
+                        '${_esc(displayName)}',
+                        '${_esc(courseTitle)}',
+                        '${_esc(issuedDate)}',
+                        '${_esc(courseSem)}',
+                        '${_esc(String(courseCredits))}',
+                        '${_esc(gradeLabel)}${gradeScore ? ' (CGPA ' + gradeScore + ')' : ''}'
+                    )">
+                <i class="fas fa-file-pdf"></i>
+                Download Certificate as PDF
+            </button>
+        </div>
+    </div>`;
+}
+
+/* Escape single-quotes for safe inline onclick attribute embedding */
+function _esc(s) {
+    return (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+/* ── PDF Generator using jsPDF ── */
+window.downloadCertificateAsPDF = function(studentName, courseTitle, issuedDate, semester, credits, grade) {
+    if (typeof window.jspdf === 'undefined') {
+        alert('PDF library is still loading. Please try again in a moment.');
+        return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+
+    const W = doc.internal.pageSize.getWidth();   // 841.89
+    const H = doc.internal.pageSize.getHeight();  // 595.28
+
+    // ── Background ──────────────────────────────────────────────────────
+    doc.setFillColor(7, 7, 11);
+    doc.rect(0, 0, W, H, 'F');
+
+    // Subtle radial top highlight
+    for (let r = 180; r > 0; r -= 10) {
+        const alpha = 0.015 - (r / 180) * 0.012;
+        doc.setFillColor(45, 181, 93);
+        doc.setGState(doc.GState({ opacity: alpha }));
+        doc.ellipse(W / 2, 0, r * 2.5, r, 'F');
+    }
+    doc.setGState(doc.GState({ opacity: 1 }));
+
+    // ── Main outer border ────────────────────────────────────────────────
+    doc.setDrawColor(45, 181, 93);
+    doc.setLineWidth(2.5);
+    doc.rect(18, 18, W - 36, H - 36);
+
+    // Inner subtle border
+    doc.setDrawColor(26, 138, 64);
+    doc.setLineWidth(0.75);
+    doc.rect(26, 26, W - 52, H - 52);
+
+    // ── Corner ornaments ─────────────────────────────────────────────────
+    const cs = 20;
+    doc.setDrawColor(45, 181, 93);
+    doc.setLineWidth(2);
+    [
+        [32, 32,  1,  1],
+        [W - 32, 32, -1,  1],
+        [32, H - 32,  1, -1],
+        [W - 32, H - 32, -1, -1]
+    ].forEach(([x, y, dx, dy]) => {
+        doc.line(x, y, x + dx * cs, y);
+        doc.line(x, y, x, y + dy * cs);
+    });
+
+    // ── ELMS Brand ───────────────────────────────────────────────────────
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(26);
+    const elmWidth  = doc.getTextWidth('ELM');
+    const sWidth    = doc.getTextWidth('S');
+    const brandTotalW = elmWidth + sWidth;
+    const brandStartX = W / 2 - brandTotalW / 2;
+    doc.setTextColor(255, 255, 255);
+    doc.text('ELM', brandStartX, 72, { align: 'left' });
+    doc.setTextColor(45, 181, 93);
+    doc.text('S', brandStartX + elmWidth, 72, { align: 'left' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(74, 86, 104);
+    doc.text('E - L E A R N I N G   M A N A G E M E N T   S Y S T E M', W / 2, 85, { align: 'center' });
+
+    // Thin green separator line
+    doc.setDrawColor(45, 181, 93);
+    doc.setLineWidth(0.5);
+    doc.line(W / 2 - 130, 92, W / 2 + 130, 92);
+
+    // ── "Certificate of Completion" badge label ──────────────────────────
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(251, 191, 36);
+    doc.text('CERTIFICATE OF COMPLETION', W / 2, 115, { align: 'center' });
+
+    // ── Trophy / medal symbol ─────────────────────────────────────────────
+    // Draw a circle badge (emoji not supported in jsPDF)
+    doc.setDrawColor(251, 191, 36);
+    doc.setLineWidth(1.5);
+    doc.setFillColor(40, 28, 5);
+    doc.circle(W / 2, 138, 22, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(251, 191, 36);
+    doc.text('★', W / 2, 144, { align: 'center' });
+
+    // ── Presenting text ──────────────────────────────────────────────────
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(107, 114, 128);
+    doc.text('This is to proudly certify that', W / 2, 178, { align: 'center' });
+
+    // ── Student Name ──────────────────────────────────────────────────────
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(30);
+    doc.setTextColor(255, 255, 255);
+    doc.text(studentName, W / 2, 214, { align: 'center' });
+
+    // Name underline (gradient-style via two lines)
+    const nameW = doc.getTextWidth(studentName);
+    doc.setDrawColor(45, 181, 93);
+    doc.setLineWidth(1.5);
+    doc.line(W / 2 - nameW / 2, 220, W / 2 + nameW / 2, 220);
+
+    // ── Body text ─────────────────────────────────────────────────────────
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    doc.setTextColor(156, 163, 175);
+    doc.text('has successfully completed all modules and assessments of the course', W / 2, 244, { align: 'center' });
+
+    // ── Course Title ──────────────────────────────────────────────────────
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(45, 181, 93);
+    doc.text(courseTitle, W / 2, 272, { align: 'center' });
+
+    // ── Sub text ──────────────────────────────────────────────────────────
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(107, 114, 128);
+    const subLines = doc.splitTextToSize(
+        'demonstrating outstanding commitment, technical skill, and a thorough understanding of the subject matter throughout the programme.',
+        500
+    );
+    doc.text(subLines, W / 2, 292, { align: 'center' });
+
+    // ── Divider ───────────────────────────────────────────────────────────
+    doc.setDrawColor(30, 37, 53);
+    doc.setLineWidth(0.8);
+    doc.line(W / 2 - 200, 316, W / 2 + 200, 316);
+
+    // ── Meta row: Date | Semester | Credits ───────────────────────────────
+    const metas = [
+        { label: 'DATE ISSUED', value: issuedDate },
+        { label: 'SEMESTER',    value: semester    },
+        { label: 'CREDITS',     value: credits     },
+        { label: 'GRADE',       value: grade || '–'}
+    ];
+    const colW = 130;
+    const startX = W / 2 - colW * 1.5;
+    metas.forEach((m, i) => {
+        const cx = startX + i * colW;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(74, 86, 104);
+        doc.text(m.label, cx, 332, { align: 'center' });
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(156, 163, 175);
+        doc.text(String(m.value), cx, 346, { align: 'center' });
+    });
+
+    // ── Footer ────────────────────────────────────────────────────────────
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(40, 44, 60);
+    doc.text(
+        'ELMS — E-Learning Management System  |  Authenticated Course Completion Certificate',
+        W / 2, H - 30, { align: 'center' }
+    );
+
+    // ── Save ──────────────────────────────────────────────────────────────
+    const safeName = courseTitle.replace(/[^a-zA-Z0-9]/g, '_');
+    doc.save(`ELMS_Certificate_${safeName}.pdf`);
+};
+</script>
+</body>
+</html>

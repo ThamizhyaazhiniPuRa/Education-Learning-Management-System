@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>ELMS – Grades</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26; --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6; --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --yellow:#fbbf24; --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+        .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:300; transition:width 0.3s,transform 0.3s; }
+        .sidebar.collapsed { width:64px; }
+        .sidebar.collapsed .brand-sub,.sidebar.collapsed .nav-label-text,.sidebar.collapsed .nav-section-label,.sidebar.collapsed .stu-name,.sidebar.collapsed .stu-role { display:none; }
+        .sidebar.collapsed .nav-item { justify-content:center; padding:11px 0; }
+        .sidebar.collapsed .nav-item i { width:auto; margin:0; }
+        .sidebar.collapsed .stu-card { justify-content:center; padding:10px; }
+        .sidebar-header { padding:18px 14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+        .sidebar-toggle { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:5px 7px; border-radius:7px; transition:0.2s; flex-shrink:0; margin-left:auto; }
+        .sidebar-toggle:hover { color:#fff; background:rgba(255,255,255,0.07); }
+        .brand { font-size:1.4rem; font-weight:900; color:#fff; } .brand span { color:var(--green); }
+        .brand-sub { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+        .nav-section-label { color:#4a4a6a; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; padding:12px 8px 5px; margin-top:8px; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:0.86rem; font-weight:500; transition:all 0.2s; margin-bottom:2px; position:relative; cursor:pointer; border:none; background:transparent; width:100%; }
+        .nav-item i { width:18px; text-align:center; font-size:0.9rem; flex-shrink:0; }
+        .nav-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-item.active { color:#fff; background:linear-gradient(135deg,rgba(45,181,93,0.2),rgba(45,181,93,0.04)); }
+        .nav-item.active i { color:var(--green); }
+        .nav-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--green); border-radius:0 3px 3px 0; }
+        .nav-item.logout { color:var(--red); } .nav-item.logout:hover { background:rgba(239,68,68,0.08); }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .stu-card { background:var(--card); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .stu-avatar { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--blue),#1d4ed8); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; flex-shrink:0; }
+        .stu-name { font-weight:600; font-size:0.82rem; color:#fff; } .stu-role { font-size:0.7rem; color:var(--muted); }
+        .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:299; }
+        .topbar { position:fixed; top:0; left:240px; right:0; height:64px; background:rgba(15,15,19,0.97); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200; transition:left 0.3s; }
+        .topbar.sb-collapsed { left:64px; }
+        .topbar-title { font-weight:700; font-size:1.1rem; flex:1; }
+        .topbar-title span { color:var(--muted); font-weight:400; font-size:0.82rem; margin-left:8px; }
+        .icon-btn { width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; transition:0.2s; text-decoration:none; position:relative; }
+        .icon-btn:hover { border-color:#888; background:rgba(255,255,255,0.12); }
+        .sidebar.collapsed .nav-item i { color:#fff !important; font-size:0.95rem; }
+        .icon-btn i[class*="fa-bell"]   { color:var(--orange) !important; font-size:1rem; }
+        .icon-btn i[class*="fa-user"]   { color:var(--green)  !important; font-size:1rem; }
+        .icon-btn i[class*="fa-shield"] { color:var(--green)  !important; font-size:1rem; }
+        .icon-btn i[class*="fa-bars"]   { color:#fff          !important; font-size:1rem; }
+        .notif-dot { position:absolute; top:7px; right:7px; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid var(--bg); }
+        .notif-dropdown { position:absolute; top:50px; right:0; width:280px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .notif-dropdown.show { display:block; }
+        .notif-header { padding:12px 16px; border-bottom:1px solid var(--border); font-weight:700; font-size:0.84rem; }
+        .notif-item { padding:10px 16px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:10px; }
+        .notif-item:last-child { border-bottom:none; }
+        .notif-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; flex-shrink:0; }
+        .notif-text { font-size:0.76rem; color:var(--text); line-height:1.5; }
+        .notif-time { font-size:0.68rem; color:var(--muted); margin-top:2px; }
+        .profile-dropdown { position:absolute; top:50px; right:0; width:220px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .profile-dropdown.show { display:block; }
+        .profile-dropdown-header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+        .profile-menu-item { display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--muted); font-size:0.83rem; font-weight:500; text-decoration:none; cursor:pointer; transition:0.18s; background:none; border:none; width:100%; text-align:left; }
+        .profile-menu-item i { width:16px; text-align:center; }
+        .profile-menu-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .profile-menu-item.danger { color:var(--red); }
+        .profile-menu-item.danger:hover { background:rgba(239,68,68,0.08); }
+        .profile-sep { border:none; border-top:1px solid var(--border); margin:4px 0; }
+        .main { margin-left:240px; margin-top:64px; padding:28px; transition:margin-left 0.3s; }
+        .main.sb-collapsed { margin-left:64px; }
+        .chart-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px; }
+        .chart-card canvas { max-height:220px; }
+        .grade-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px 22px; margin-bottom:14px; display:flex; align-items:center; gap:18px; }
+        .grade-circle { width:52px; height:52px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1rem; }
+        .grade-name { font-weight:700; font-size:0.95rem; }
+        .grade-meta { font-size:0.78rem; color:var(--muted); margin-top:2px; }
+        .grade-score { margin-left:auto; text-align:right; }
+        .grade-score .big { font-size:1.6rem; font-weight:900; }
+        .grade-score .lbl { font-size:0.72rem; color:var(--muted); }
+        .state-box { background:var(--card); border:1px dashed var(--border); border-radius:14px; padding:50px 20px; text-align:center; color:var(--muted); }
+        .state-box i { font-size:2.2rem; color:#2a2a3a; display:block; margin-bottom:14px; }
+        .hamburger { display:flex; }
+        @media (max-width:992px) { .sidebar { transform:translateX(-100%); width:240px !important; } .sidebar.open { transform:translateX(0); } .sidebar-overlay.show { display:block; } .main,.topbar { margin-left:0 !important; left:0 !important; } }
+        @media (max-width:768px) { .main { padding:16px; } }
+    </style>
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div><div class="brand">ELM<span>S</span></div><div class="brand-sub">Learning Management</div></div>
+        <button class="sidebar-toggle" onclick="collapseSidebar()" title="Collapse"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a href="/student/dashboard"  class="nav-item"><i class="fas fa-chart-pie"></i><span class="nav-label-text"> Dashboard</span></a>
+        <a href="/student/courses"    class="nav-item"><i class="fas fa-book-open"></i><span class="nav-label-text"> My Courses</span></a>
+        <div class="nav-section-label">Academics</div>
+        <a href="/student/attendance" class="nav-item"><i class="fas fa-calendar-check"></i><span class="nav-label-text"> Attendance</span></a>
+        <a href="/student/grades"     class="nav-item active"><i class="fas fa-star"></i><span class="nav-label-text"> Grades</span></a>
+        <a href="/student/analytics"  class="nav-item"><i class="fas fa-chart-bar"></i><span class="nav-label-text"> My Analytics</span></a>
+        <div class="nav-section-label">Account</div>
+        <a href="/student/profile"    class="nav-item"><i class="fas fa-user-circle"></i><span class="nav-label-text"> Profile</span></a>
+        <button class="nav-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span class="nav-label-text"> Logout</span></button>
+    </nav>
+    <div class="sidebar-footer"><div class="stu-card"><div class="stu-avatar" id="sidebarAvatar">S</div><div><div class="stu-name" id="sidebarName">Student</div><div class="stu-role">Student</div></div></div></div>
+</div>
+<div class="topbar" id="topbar">
+    <button class="icon-btn hamburger me-2" onclick="smartToggleSidebar()" title="Toggle Sidebar"><i class="fas fa-bars" style="color:#fff;font-size:1rem;"></i></button>
+    <div class="topbar-title">Grades <span>/ Scores &amp; Performance</span></div>
+    <div style="position:relative;">
+        <div class="icon-btn" onclick="toggleNotif(event)"><i class="fas fa-bell" style="color:#f59e0b;font-size:1rem;"></i><div class="notif-dot"></div></div>
+        <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header"><i class="fas fa-bell me-2" style="color:var(--orange);"></i>Notifications</div>
+            <div class="notif-item"><div class="notif-icon" style="background:rgba(59,130,246,0.15);color:var(--blue);"><i class="fas fa-book-open"></i></div><div><div class="notif-text">New assignment available.</div><div class="notif-time"><i class="fas fa-clock me-1"></i>Just now</div></div></div>
+        </div>
+    </div>
+    <div style="position:relative;">
+        <div class="icon-btn" onclick="toggleProfileMenu(event)"><i class="fas fa-user-circle" style="color:#2db55d;font-size:1rem;"></i></div>
+        <div class="profile-dropdown" id="profileDropdown">
+            <div class="profile-dropdown-header"><div class="stu-avatar" id="profileMenuAvatar" style="width:32px;height:32px;font-size:0.85rem;">S</div><div><div style="font-weight:700;font-size:0.83rem;color:#fff;" id="profileMenuName">Student</div><div style="font-size:0.7rem;color:var(--green);">Student Account</div></div></div>
+            <a href="/student/profile"    class="profile-menu-item"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="/student/grades"     class="profile-menu-item"><i class="fas fa-star"></i> My Grades</a>
+            <a href="/student/attendance" class="profile-menu-item"><i class="fas fa-calendar-check"></i> Attendance</a>
+            <a href="/student/courses"    class="profile-menu-item"><i class="fas fa-book-open"></i> My Courses</a>
+            <hr class="profile-sep">
+            <button class="profile-menu-item danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+        </div>
+    </div>
+</div>
+<div class="main" id="mainContent">
+    <h4 class="fw-bold mb-4"><i class="fas fa-star me-2 text-warning"></i>Grades &amp; Scores</h4>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div style="background:linear-gradient(135deg,#0d2a1a,var(--card)); border:1px solid rgba(45,181,93,0.3); border-radius:16px; padding:28px; text-align:center;">
+                <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:0.5px;margin-bottom:8px;">Overall Average</div>
+                <div style="font-size:3rem;font-weight:900;color:var(--green);line-height:1;" id="overallScore">–</div>
+                <div style="color:var(--muted);font-size:0.8rem;margin-top:6px;">Across all graded submissions</div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="chart-card h-100">
+                <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar me-2" style="color:var(--yellow);"></i>Score by Assignment</h6>
+                <canvas id="gradeChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div id="gradesList"><div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading grades…</div></div>
+</div>
+<script>
+    const token     = localStorage.getItem('token');
+    const role      = localStorage.getItem('role');
+    const stuName   = localStorage.getItem('name') || 'Student';
+    const studentId = parseInt(localStorage.getItem('studentId') || '0');
+    if (!token || role !== 'STUDENT') window.location.href = '/login';
+    function smartToggleSidebar(){ if(window.innerWidth<=992){toggleSidebar();}else{collapseSidebar();} }
+    function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('show'); }
+    function collapseSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('topbar').classList.toggle('sb-collapsed'); document.getElementById('mainContent').classList.toggle('sb-collapsed'); }
+    function toggleNotif(e){ e.stopPropagation(); document.getElementById('profileDropdown').classList.remove('show'); document.getElementById('notifDropdown').classList.toggle('show'); }
+    function toggleProfileMenu(e){ e.stopPropagation(); document.getElementById('notifDropdown').classList.remove('show'); document.getElementById('profileDropdown').classList.toggle('show'); }
+    document.addEventListener('click', function(){ document.getElementById('notifDropdown').classList.remove('show'); document.getElementById('profileDropdown').classList.remove('show'); });
+
+    const AUTH = { 'Authorization':'Bearer '+token };
+    function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    async function apiFetch(url){ try{ const r=await fetch(url,{headers:AUTH}); return r.ok?await r.json():null; }catch(_){return null;} }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        document.getElementById('sidebarAvatar').textContent = stuName.charAt(0).toUpperCase();
+        document.getElementById('sidebarName').textContent   = stuName;
+
+        const [subs, enrolledCourses] = await Promise.all([
+            apiFetch(`/api/students/${studentId}/submissions`),
+            apiFetch(`/api/students/${studentId}/courses`)
+        ]);
+
+        const enrolledIds = new Set((enrolledCourses||[]).map(c => c.courseId));
+        let assigns = [];
+        for (const cid of enrolledIds) {
+            const list = await apiFetch(`/api/assignments/course/${cid}`) || [];
+            assigns = assigns.concat(list);
+        }
+
+        const graded = (subs||[]).filter(s => s.score != null);
+        // For each assignment, use best (highest) score for display if multiple attempts
+        const bestByAssignment = {};
+        graded.forEach(s => {
+            const aid = s.assignment?.assignmentId ?? s.assignmentId;
+            if (!bestByAssignment[aid] || s.score > bestByAssignment[aid].score) {
+                bestByAssignment[aid] = s;
+            }
+        });
+        const displayGraded = Object.values(bestByAssignment);
+        if (!displayGraded.length) {
+            document.getElementById('gradesList').innerHTML = `<div class="state-box"><i class="fas fa-star"></i>No graded submissions yet.</div>`;
+            return;
+        }
+
+        const avg = Math.round(displayGraded.reduce((sum,s) => sum+s.score, 0) / displayGraded.length);
+        document.getElementById('overallScore').textContent = avg;
+
+        /* Chart */
+        const chartLabels = displayGraded.map(s => {
+            const sid = s.assignment?.assignmentId ?? s.assignmentId;
+            const a = assigns.find(x => x.assignmentId===sid);
+            const t = a?.title || (s.assignment?.title) || 'A#'+sid;
+            return t.length>14 ? t.substring(0,12)+'…' : t;
+        });
+        new Chart(document.getElementById('gradeChart'), {
+            type:'bar',
+            data:{ labels:chartLabels, datasets:[{ label:'Score', data:displayGraded.map(s=>s.score), backgroundColor:'rgba(59,130,246,0.6)', borderColor:'#3b82f6', borderWidth:1, borderRadius:5 }] },
+            options:{ responsive:true, maintainAspectRatio:true, plugins:{ legend:{ display:false } },
+                scales:{ x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7280',font:{size:10}} }, y:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7280',font:{size:10}}, min:0 } } }
+        });
+
+        /* List */
+        document.getElementById('gradesList').innerHTML = displayGraded.map(s => {
+            const sid = s.assignment?.assignmentId ?? s.assignmentId;
+            const a   = assigns.find(x => x.assignmentId===sid);
+            const courseId   = a?.course?.courseId ?? a?.courseId ?? s.assignment?.course?.courseId ?? '?';
+            const courseName = a?.course?.title    ?? s.assignment?.course?.title ?? null;
+            const aTitle     = a?.title ?? s.assignment?.title ?? 'Assignment #'+sid;
+            const max = a?.maxScore || s.assignment?.maxScore || 100;
+            const pct = Math.round((s.score/max)*100);
+            const retake = s.retakeCount || 0;
+            // Grading scale: >=90 A+, >=80 A, >=70 B+, >=60 B, >=50 C, <50 F
+            let grd, col;
+            if (pct >= 90)      { grd = 'A+'; col = 'var(--green)'; }
+            else if (pct >= 80) { grd = 'A';  col = 'var(--green)'; }
+            else if (pct >= 70) { grd = 'B+'; col = 'var(--cyan)'; }
+            else if (pct >= 60) { grd = 'B';  col = 'var(--blue)'; }
+            else if (pct >= 50) { grd = 'C';  col = 'var(--orange)'; }
+            else               { grd = 'F';  col = 'var(--red)'; }
+            const courseMeta = courseName ? `${esc(courseName)} (ID: ${courseId})` : `Course #${courseId}`;
+            const retakeInfo = retake > 0 ? `<span style="font-size:0.68rem;background:rgba(245,158,11,0.12);color:var(--orange);border-radius:6px;padding:2px 8px;margin-left:6px;">Retake #${retake}</span>` : '';
+            const failBadge  = pct < 50 ? `<span style="font-size:0.68rem;background:rgba(239,68,68,0.12);color:var(--red);border-radius:6px;padding:2px 8px;margin-left:4px;"><i class="fas fa-times-circle me-1"></i>FAILED</span>` : '';
+            return `
+            <div class="grade-card">
+                <div class="grade-circle" style="background:${col}22;color:${col};">${grd}</div>
+                <div style="flex:1;">
+                    <div class="grade-name">${esc(aTitle)}${retakeInfo}${failBadge}</div>
+                    <div class="grade-meta">${courseMeta} · Submitted</div>
+                    ${s.feedback?`<div class="grade-meta" style="color:var(--cyan);margin-top:3px;"><i class="fas fa-comment me-1"></i>${esc(s.feedback)}</div>`:''}
+                </div>
+                <div class="grade-score">
+                    <div class="big" style="color:${col};">${s.score}</div>
+                    <div class="lbl">out of ${max}</div>
+                    <div style="font-size:0.72rem;color:${col};font-weight:700;margin-top:2px;">${pct}% · ${grd}</div>
+                </div>
+            </div>`;
+        }).join('');
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>ELMS – Attendance</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26; --green:#2db55d; --blue:#3b82f6; --purple:#8b5cf6; --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --yellow:#fbbf24; --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+        .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:300; transition:width 0.3s,transform 0.3s; }
+        .sidebar.collapsed { width:64px; }
+        .sidebar.collapsed .brand-sub,.sidebar.collapsed .nav-label-text,.sidebar.collapsed .nav-section-label,.sidebar.collapsed .stu-name,.sidebar.collapsed .stu-role { display:none; }
+        .sidebar.collapsed .nav-item { justify-content:center; padding:11px 0; }
+        .sidebar.collapsed .nav-item i { width:auto; margin:0; }
+        .sidebar.collapsed .stu-card { justify-content:center; padding:10px; }
+        .sidebar-header { padding:18px 14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+        .sidebar-toggle { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:5px 7px; border-radius:7px; transition:0.2s; flex-shrink:0; margin-left:auto; }
+        .sidebar-toggle:hover { color:#fff; background:rgba(255,255,255,0.07); }
+        .brand { font-size:1.4rem; font-weight:900; color:#fff; } .brand span { color:var(--green); }
+        .brand-sub { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+        .nav-section-label { color:#4a4a6a; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; padding:12px 8px 5px; margin-top:8px; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:0.86rem; font-weight:500; transition:all 0.2s; margin-bottom:2px; position:relative; cursor:pointer; border:none; background:transparent; width:100%; }
+        .nav-item i { width:18px; text-align:center; font-size:0.9rem; flex-shrink:0; }
+        .nav-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-item.active { color:#fff; background:linear-gradient(135deg,rgba(45,181,93,0.2),rgba(45,181,93,0.04)); }
+        .nav-item.active i { color:var(--green); }
+        .nav-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--green); border-radius:0 3px 3px 0; }
+        .nav-item.logout { color:var(--red); } .nav-item.logout:hover { background:rgba(239,68,68,0.08); }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .stu-card { background:var(--card); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .stu-avatar { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--blue),#1d4ed8); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; flex-shrink:0; }
+        .stu-name { font-weight:600; font-size:0.82rem; color:#fff; } .stu-role { font-size:0.7rem; color:var(--muted); }
+        .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:299; }
+        .topbar { position:fixed; top:0; left:240px; right:0; height:64px; background:rgba(15,15,19,0.97); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200; transition:left 0.3s; }
+        .topbar.sb-collapsed { left:64px; }
+        .topbar-title { font-weight:700; font-size:1.1rem; flex:1; }
+        .topbar-title span { color:var(--muted); font-weight:400; font-size:0.82rem; margin-left:8px; }
+        .icon-btn { width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; transition:0.2s; text-decoration:none; position:relative; }
+        .icon-btn:hover { border-color:#888; background:rgba(255,255,255,0.12); }
+        .sidebar.collapsed .nav-item i { color:#fff !important; font-size:0.95rem; }
+        .icon-btn i[class*="fa-bell"]   { color:var(--orange) !important; font-size:1rem; }
+        .icon-btn i[class*="fa-user"]   { color:var(--green)  !important; font-size:1rem; }
+        .icon-btn i[class*="fa-shield"] { color:var(--green)  !important; font-size:1rem; }
+        .icon-btn i[class*="fa-bars"]   { color:#fff          !important; font-size:1rem; }
+        .notif-dot { position:absolute; top:7px; right:7px; width:8px; height:8px; background:var(--red); border-radius:50%; border:2px solid var(--bg); }
+        .notif-dropdown { position:absolute; top:50px; right:0; width:300px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .notif-dropdown.show { display:block; }
+        .notif-header { padding:14px 18px; border-bottom:1px solid var(--border); font-weight:700; font-size:0.86rem; display:flex; justify-content:space-between; align-items:center; }
+        .notif-item { padding:12px 18px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px; }
+        .notif-item:last-child { border-bottom:none; }
+        .notif-icon { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:0.8rem; flex-shrink:0; }
+        .notif-text { font-size:0.78rem; color:var(--text); line-height:1.5; }
+        .notif-time { font-size:0.7rem; color:var(--muted); margin-top:2px; }
+        .profile-dropdown { position:absolute; top:50px; right:0; width:220px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .profile-dropdown.show { display:block; }
+        .profile-dropdown-header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+        .profile-menu-item { display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--muted); font-size:0.83rem; font-weight:500; text-decoration:none; cursor:pointer; transition:0.18s; background:none; border:none; width:100%; text-align:left; }
+        .profile-menu-item i { width:16px; text-align:center; }
+        .profile-menu-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .profile-menu-item.danger { color:var(--red); }
+        .profile-menu-item.danger:hover { background:rgba(239,68,68,0.08); }
+        .profile-sep { border:none; border-top:1px solid var(--border); margin:4px 0; }
+        .main { margin-left:240px; margin-top:64px; padding:28px; transition:margin-left 0.3s; }
+        .main.sb-collapsed { margin-left:64px; }
+        .stat-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 18px; transition:transform 0.2s,border-color 0.2s; }
+        .stat-card:hover { transform:translateY(-3px); border-color:#3a3a5a; }
+        .stat-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; margin-bottom:12px; }
+        .stat-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+        .stat-value { font-size:2rem; font-weight:900; line-height:1.1; margin:4px 0 3px; }
+        .stat-sub { font-size:0.72rem; color:var(--muted); }
+        .circle-wrap { position:relative; width:160px; height:160px; margin:0 auto; }
+        .circle-wrap svg { transform:rotate(-90deg); }
+        .circle-bg { fill:none; stroke:#1e1e28; stroke-width:14; }
+        .circle-fill { fill:none; stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1.2s ease; }
+        .circle-text { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .circle-pct { font-size:2rem; font-weight:900; }
+        .circle-label { font-size:0.72rem; color:var(--muted); font-weight:600; text-transform:uppercase; }
+        .chart-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px; }
+        .att-table { width:100%; border-collapse:collapse; }
+        .att-table thead th { padding:10px 16px; font-size:0.7rem; font-weight:700; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); background:rgba(255,255,255,0.02); }
+        .att-table tbody td { padding:12px 16px; font-size:0.84rem; border-bottom:1px solid var(--border); vertical-align:middle; }
+        .att-table tbody tr:last-child td { border-bottom:none; }
+        .att-table tbody tr:hover td { background:rgba(255,255,255,0.02); }
+        .pill-present { background:rgba(45,181,93,0.15); color:var(--green); border-radius:20px; padding:3px 14px; font-size:0.7rem; font-weight:700; display:inline-block; }
+        .pill-absent  { background:rgba(239,68,68,0.15); color:var(--red);   border-radius:20px; padding:3px 14px; font-size:0.7rem; font-weight:700; display:inline-block; }
+        .pill-good    { background:rgba(45,181,93,0.15); color:var(--green);  border-radius:20px; padding:3px 10px; font-size:0.7rem; font-weight:700; display:inline-block; }
+        .pill-warn    { background:rgba(245,158,11,0.15); color:var(--orange); border-radius:20px; padding:3px 10px; font-size:0.7rem; font-weight:700; display:inline-block; }
+        .pill-low     { background:rgba(239,68,68,0.15); color:var(--red);    border-radius:20px; padding:3px 10px; font-size:0.7rem; font-weight:700; display:inline-block; }
+        .prog-wrap { background:#1e1e28; border-radius:4px; height:8px; overflow:hidden; flex:1; }
+        .prog-fill { height:100%; border-radius:4px; transition:width 1s ease; }
+        .improve-banner { border-radius:12px; padding:14px 18px; display:flex; align-items:center; gap:14px; margin-top:16px; }
+        .state-box { background:var(--card); border:1px dashed var(--border); border-radius:14px; padding:50px 20px; text-align:center; color:var(--muted); }
+        .state-box i { font-size:2.2rem; color:#2a2a3a; display:block; margin-bottom:14px; }
+        .hamburger { display:flex; }
+        @media (max-width:992px) { .sidebar { transform:translateX(-100%); width:240px !important; } .sidebar.open { transform:translateX(0); } .sidebar-overlay.show { display:block; } .main,.topbar { margin-left:0 !important; left:0 !important; } }
+        @media (max-width:768px) { .main { padding:16px; } }
+    </style>
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div><div class="brand">ELM<span>S</span></div><div class="brand-sub">Learning Management</div></div>
+        <button class="sidebar-toggle" onclick="collapseSidebar()" title="Collapse"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a href="/student/dashboard"  class="nav-item"><i class="fas fa-chart-pie"></i><span class="nav-label-text"> Dashboard</span></a>
+        <a href="/student/courses"    class="nav-item"><i class="fas fa-book-open"></i><span class="nav-label-text"> My Courses</span></a>
+        <div class="nav-section-label">Academics</div>
+        <a href="/student/attendance" class="nav-item active"><i class="fas fa-calendar-check"></i><span class="nav-label-text"> Attendance</span></a>
+        <a href="/student/grades"     class="nav-item"><i class="fas fa-star"></i><span class="nav-label-text"> Grades</span></a>
+        <a href="/student/analytics"  class="nav-item"><i class="fas fa-chart-bar"></i><span class="nav-label-text"> My Analytics</span></a>
+        <div class="nav-section-label">Account</div>
+        <a href="/student/profile"    class="nav-item"><i class="fas fa-user-circle"></i><span class="nav-label-text"> Profile</span></a>
+        <button class="nav-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span class="nav-label-text"> Logout</span></button>
+    </nav>
+    <div class="sidebar-footer"><div class="stu-card"><div class="stu-avatar" id="sidebarAvatar">S</div><div><div class="stu-name" id="sidebarName">Student</div><div class="stu-role">Student</div></div></div></div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar" id="topbar">
+    <button class="icon-btn hamburger me-2" onclick="smartToggleSidebar()" title="Toggle Sidebar"><i class="fas fa-bars" style="color:#fff;font-size:1rem;"></i></button>
+    <div class="topbar-title">Attendance <span>/ My Record</span></div>
+    <div style="position:relative;">
+        <div class="icon-btn" onclick="toggleNotif(event)"><i class="fas fa-bell" style="color:#f59e0b;font-size:1rem;"></i><div class="notif-dot"></div></div>
+        <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header"><span><i class="fas fa-bell me-2" style="color:var(--orange);"></i>Notifications</span></div>
+            <div class="notif-item"><div class="notif-icon" style="background:rgba(59,130,246,0.15);color:var(--blue);"><i class="fas fa-book-open"></i></div><div><div class="notif-text">New assignment available.</div><div class="notif-time"><i class="fas fa-clock me-1"></i>Just now</div></div></div>
+        </div>
+    </div>
+    <div style="position:relative;">
+        <div class="icon-btn" onclick="toggleProfileMenu(event)"><i class="fas fa-user-circle" style="color:#2db55d;font-size:1rem;"></i></div>
+        <div class="profile-dropdown" id="profileDropdown">
+            <div class="profile-dropdown-header"><div class="stu-avatar" id="profileMenuAvatar" style="width:32px;height:32px;font-size:0.85rem;">S</div><div><div style="font-weight:700;font-size:0.83rem;color:#fff;" id="profileMenuName">Student</div><div style="font-size:0.7rem;color:var(--green);">Student Account</div></div></div>
+            <a href="/student/profile"    class="profile-menu-item"><i class="fas fa-user-circle"></i> My Profile</a>
+            <a href="/student/grades"     class="profile-menu-item"><i class="fas fa-star"></i> My Grades</a>
+            <a href="/student/attendance" class="profile-menu-item"><i class="fas fa-calendar-check"></i> Attendance</a>
+            <a href="/student/courses"    class="profile-menu-item"><i class="fas fa-book-open"></i> My Courses</a>
+            <hr class="profile-sep">
+            <button class="profile-menu-item danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="mainContent">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0"><i class="fas fa-calendar-check me-2 text-success"></i>My Attendance</h4>
+        <span style="font-size:0.8rem;color:var(--muted);" id="todayDate"></span>
+    </div>
+
+    <!-- A. Summary Cards -->
+    <div class="row g-3 mb-4" id="summaryCards">
+        <div class="col-12"><div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading attendance data…</div></div>
+    </div>
+
+    <!-- B. Progress Circle + E. Monthly Chart -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="chart-card h-100 d-flex flex-column align-items-center justify-content-center" style="gap:16px;min-height:300px;">
+                <h6 class="fw-bold mb-0 align-self-start"><i class="fas fa-circle-notch me-2" style="color:var(--cyan);"></i>Overall Rate</h6>
+                <div class="circle-wrap">
+                    <svg width="160" height="160" viewBox="0 0 160 160">
+                        <circle class="circle-bg"   cx="80" cy="80" r="66"/>
+                        <circle class="circle-fill" cx="80" cy="80" r="66" id="circleFill"
+                            stroke="#2db55d" stroke-dasharray="414.69" stroke-dashoffset="414.69"/>
+                    </svg>
+                    <div class="circle-text">
+                        <div class="circle-pct" id="circlePct" style="color:var(--green);">0%</div>
+                        <div class="circle-label">Attendance</div>
+                    </div>
+                </div>
+                <div id="improveBanner" class="improve-banner w-100" style="display:none;"></div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="chart-card h-100">
+                <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar me-2 text-warning"></i>Monthly Attendance (Last 6 Months)</h6>
+                <canvas id="monthlyChart" style="max-height:230px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- D. Subject-Wise Attendance -->
+    <div class="chart-card mb-4">
+        <h6 class="fw-bold mb-4"><i class="fas fa-book me-2" style="color:var(--purple);"></i>Subject-Wise Attendance</h6>
+        <div id="subjectWise"><div class="state-box" style="padding:30px;"><i class="fas fa-spinner fa-spin"></i>Loading…</div></div>
+    </div>
+
+    <!-- C. Attendance History Table -->
+    <div class="chart-card">
+        <div class="d-flex justify-content-between align-items-center mb-3" style="flex-wrap:wrap;gap:10px;">
+            <h6 class="fw-bold mb-0"><i class="fas fa-history me-2" style="color:var(--blue);"></i>Attendance History</h6>
+            <select id="filterCourse" onchange="filterTable()" style="background:var(--card2);border:1px solid var(--border);color:#fff;border-radius:8px;padding:6px 12px;font-size:0.8rem;outline:none;">
+                <option value="">All Courses</option>
+            </select>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="att-table">
+                <thead>
+                    <tr><th>#</th><th>Date</th><th>Course</th><th>Day</th><th>Status</th></tr>
+                </thead>
+                <tbody id="historyBody">
+                    <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted);">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token     = localStorage.getItem('token');
+    const role      = localStorage.getItem('role');
+    const stuName   = localStorage.getItem('name') || 'Student';
+    const studentId = parseInt(localStorage.getItem('studentId') || '0');
+    if (!token || role !== 'STUDENT') window.location.href = '/login';
+
+    const AUTH   = { 'Authorization':'Bearer '+token };
+    const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function smartToggleSidebar(){ if(window.innerWidth<=992){toggleSidebar();}else{collapseSidebar();} }
+    function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('show'); }
+    function collapseSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('topbar').classList.toggle('sb-collapsed'); document.getElementById('mainContent').classList.toggle('sb-collapsed'); }
+    function toggleNotif(e){ e.stopPropagation(); document.getElementById('profileDropdown').classList.remove('show'); document.getElementById('notifDropdown').classList.toggle('show'); }
+    function toggleProfileMenu(e){ e.stopPropagation(); document.getElementById('notifDropdown').classList.remove('show'); document.getElementById('profileDropdown').classList.toggle('show'); }
+    document.addEventListener('click', function(){ document.getElementById('notifDropdown').classList.remove('show'); document.getElementById('profileDropdown').classList.remove('show'); });
+    function logout(){ localStorage.clear(); window.location.href='/login'; }
+    async function apiFetch(url){ try{ const r=await fetch(url,{headers:AUTH}); return r.ok?await r.json():null; }catch(_){return null;} }
+
+    let allRecords = [];
+    let courseMap  = {};
+    let monthlyChartInst = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const init = stuName.charAt(0).toUpperCase();
+        document.getElementById('sidebarAvatar').textContent    = init;
+        document.getElementById('sidebarName').textContent      = stuName;
+        document.getElementById('profileMenuAvatar').textContent = init;
+        document.getElementById('profileMenuName').textContent   = stuName;
+        document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+        const [records, enrolledCourses] = await Promise.all([
+            apiFetch(`/api/attendance/student/${studentId}`),
+            apiFetch(`/api/students/${studentId}/courses`)
+        ]);
+
+        allRecords = records || [];
+
+        // Build courseId → title map from enrolled courses
+        (enrolledCourses||[]).forEach(c => { courseMap[c.courseId] = c.title || ('Course #'+c.courseId); });
+        // Also extract from records themselves (fallback)
+        allRecords.forEach(r => {
+            if (r.course && r.course.courseId && !courseMap[r.course.courseId]) {
+                courseMap[r.course.courseId] = r.course.title || ('Course #'+r.course.courseId);
+            }
+        });
+
+        // Sort newest first
+        allRecords.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        renderSummaryCards();
+        renderCircle();
+        renderSubjectWise(enrolledCourses||[]);
+        renderMonthlyChart();
+        renderHistoryTable(allRecords);
+        populateCourseFilter();
+    });
+
+    /* ── Unique-day stats helper ──
+       Multiple sessions/assignments on the same calendar date count as ONE day.
+       A day is PRESENT if ANY record for that day is PRESENT.              */
+    function uniqueDayStats() {
+        const dayMap = {}; // 'YYYY-MM-DD' -> 'PRESENT' | 'ABSENT'
+        allRecords.forEach(r => {
+            const key = new Date(r.date).toISOString().slice(0, 10);
+            // If already marked PRESENT, keep it present
+            if (dayMap[key] !== 'PRESENT') dayMap[key] = r.status;
+        });
+        const days    = Object.values(dayMap);
+        const total   = days.length;
+        const present = days.filter(s => s === 'PRESENT').length;
+        const absent  = days.filter(s => s === 'ABSENT').length;
+        return { total, present, absent };
+    }
+
+    /* ── A. Summary Cards ── */
+    function renderSummaryCards() {
+        const { total, present, absent } = uniqueDayStats();
+        const pct     = total ? Math.round((present/total)*100) : 0;
+        const color   = pct >= 75 ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
+        const label   = pct >= 75 ? 'Good Standing' : pct >= 50 ? 'Needs Improvement' : 'Critical';
+
+        document.getElementById('summaryCards').innerHTML = `
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(6,182,212,0.15);color:var(--cyan);"><i class="fas fa-percent"></i></div>
+                <div class="stat-label">Attendance %</div>
+                <div class="stat-value" style="color:${color};">${pct}%</div>
+                <div class="stat-sub">${label}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(45,181,93,0.15);color:var(--green);"><i class="fas fa-user-check"></i></div>
+                <div class="stat-label">Present Days</div>
+                <div class="stat-value" style="color:var(--green);">${present}</div>
+                <div class="stat-sub">unique days present</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(239,68,68,0.15);color:var(--red);"><i class="fas fa-user-times"></i></div>
+                <div class="stat-label">Absent Days</div>
+                <div class="stat-value" style="color:var(--red);">${absent}</div>
+                <div class="stat-sub">unique days absent</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(139,92,246,0.15);color:var(--purple);"><i class="fas fa-calendar-alt"></i></div>
+                <div class="stat-label">Total Days</div>
+                <div class="stat-value" style="color:var(--purple);">${total}</div>
+                <div class="stat-sub">unique school days</div>
+            </div>
+        </div>`;
+    }
+
+    /* ── B. Circle Progress ── */
+    function renderCircle() {
+        const { total, present } = uniqueDayStats();
+        const pct  = total ? Math.round((present/total)*100) : 0;
+        const circ    = 2 * Math.PI * 66; // 414.69
+        const color   = pct >= 75 ? '#2db55d' : pct >= 50 ? '#f59e0b' : '#ef4444';
+
+        document.getElementById('circleFill').style.stroke = color;
+        document.getElementById('circleFill').style.strokeDashoffset = circ - (pct/100)*circ;
+        document.getElementById('circlePct').textContent = pct + '%';
+        document.getElementById('circlePct').style.color = color;
+
+        const banner = document.getElementById('improveBanner');
+        banner.style.display = 'flex';
+        if (pct >= 75) {
+            banner.style.background = 'rgba(45,181,93,0.1)';
+            banner.innerHTML = `<i class="fas fa-trophy" style="color:var(--green);font-size:1.3rem;flex-shrink:0;"></i>
+                <div><div style="font-weight:700;color:var(--green);font-size:0.88rem;">Excellent Attendance!</div>
+                <div style="font-size:0.75rem;color:var(--muted);">You're on track. Keep it up!</div></div>`;
+        } else if (pct >= 50) {
+            banner.style.background = 'rgba(245,158,11,0.1)';
+            banner.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:var(--orange);font-size:1.3rem;flex-shrink:0;"></i>
+                <div><div style="font-weight:700;color:var(--orange);font-size:0.88rem;">Needs Improvement</div>
+                <div style="font-size:0.75rem;color:var(--muted);">Attend more sessions to reach 75%.</div></div>`;
+        } else if (total === 0) {
+            banner.style.background = 'rgba(59,130,246,0.1)';
+            banner.innerHTML = `<i class="fas fa-info-circle" style="color:var(--blue);font-size:1.3rem;flex-shrink:0;"></i>
+                <div><div style="font-weight:700;color:var(--blue);font-size:0.88rem;">No Records Yet</div>
+                <div style="font-size:0.75rem;color:var(--muted);">Attendance is marked by your instructor.</div></div>`;
+        } else {
+            banner.style.background = 'rgba(239,68,68,0.1)';
+            banner.innerHTML = `<i class="fas fa-times-circle" style="color:var(--red);font-size:1.3rem;flex-shrink:0;"></i>
+                <div><div style="font-weight:700;color:var(--red);font-size:0.88rem;">Critical – Below 50%</div>
+                <div style="font-size:0.75rem;color:var(--muted);">Immediate improvement required.</div></div>`;
+        }
+    }
+
+    /* ── D. Subject-Wise Attendance ── */
+    function renderSubjectWise(enrolledCourses) {
+        // Deduplicate: per course, per day — a day counts once (PRESENT wins)
+        const courseGroups = {}; // courseId -> { 'YYYY-MM-DD': 'PRESENT'|'ABSENT' }
+        allRecords.forEach(r => {
+            const cid  = r.course ? r.course.courseId : null;
+            if (!cid) return;
+            const dkey = new Date(r.date).toISOString().slice(0, 10);
+            if (!courseGroups[cid]) courseGroups[cid] = {};
+            if (courseGroups[cid][dkey] !== 'PRESENT') courseGroups[cid][dkey] = r.status;
+        });
+        // Collapse to count
+        const courseCounts = {};
+        Object.keys(courseGroups).forEach(cid => {
+            const days = Object.values(courseGroups[cid]);
+            courseCounts[cid] = {
+                present: days.filter(s => s === 'PRESENT').length,
+                absent:  days.filter(s => s === 'ABSENT').length
+            };
+        });
+
+        const el = document.getElementById('subjectWise');
+
+        // Use enrolled courses as baseline, adding any extra from records
+        const allCids = new Set([
+            ...enrolledCourses.map(c => String(c.courseId)),
+            ...Object.keys(courseCounts)
+        ]);
+
+        if (!allCids.size) {
+            el.innerHTML = `<div class="state-box" style="padding:30px;"><i class="fas fa-info-circle"></i>No enrolled courses or attendance records found.</div>`;
+            return;
+        }
+
+        el.innerHTML = [...allCids].map(cid => {
+            const title = courseMap[cid] || ('Course #'+cid);
+            const data  = courseCounts[cid] || { present:0, absent:0 };
+            const total = data.present + data.absent;
+            const pct   = total ? Math.round((data.present/total)*100) : 0;
+            const color = pct >= 75 ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
+            const pill  = pct >= 75
+                ? `<span class="pill-good"><i class="fas fa-check me-1"></i>Good</span>`
+                : pct >= 50
+                ? `<span class="pill-warn"><i class="fas fa-exclamation me-1"></i>Warning</span>`
+                : total === 0
+                ? `<span style="background:rgba(59,130,246,0.15);color:var(--blue);border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:700;display:inline-block;"><i class="fas fa-info-circle me-1"></i>No Records</span>`
+                : `<span class="pill-low"><i class="fas fa-times me-1"></i>Low</span>`;
+            return `
+            <div style="margin-bottom:20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                    <div style="font-weight:600;font-size:0.9rem;">${esc(title)}</div>
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span style="font-size:0.78rem;color:var(--muted);">
+                            <i class="fas fa-user-check me-1" style="color:var(--green);"></i>${data.present} present
+                            &nbsp;·&nbsp;
+                            <i class="fas fa-user-times me-1" style="color:var(--red);"></i>${data.absent} absent
+                        </span>
+                        ${pill}
+                        <span style="font-weight:800;color:${color};font-size:0.9rem;min-width:38px;text-align:right;">${total ? pct+'%' : '–'}</span>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="prog-wrap"><div class="prog-fill" style="width:${pct}%;background:${color};"></div></div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    /* ── E. Monthly Chart ── */
+    function renderMonthlyChart() {
+        // Build per-month unique-day map: { 'YYYY-MM': { 'YYYY-MM-DD': 'PRESENT'|'ABSENT' } }
+        const monthDayMap = {};
+        allRecords.forEach(r => {
+            const d    = new Date(r.date);
+            const mkey = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+            const dkey = d.toISOString().slice(0, 10);
+            if (!monthDayMap[mkey]) monthDayMap[mkey] = {};
+            if (monthDayMap[mkey][dkey] !== 'PRESENT') monthDayMap[mkey][dkey] = r.status;
+        });
+
+        const labels = [], presentData = [], absentData = [], pctLine = [];
+        const now = new Date();
+        for (let i=5; i>=0; i--) {
+            const d   = new Date(now.getFullYear(), now.getMonth()-i, 1);
+            const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+            labels.push(MONTHS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(-2));
+            const days = monthDayMap[key] ? Object.values(monthDayMap[key]) : [];
+            const p = days.filter(s => s === 'PRESENT').length;
+            const a = days.filter(s => s === 'ABSENT').length;
+            presentData.push(p);
+            absentData.push(a);
+            pctLine.push(p+a > 0 ? Math.round((p/(p+a))*100) : 0);
+        }
+
+        if (monthlyChartInst) monthlyChartInst.destroy();
+        monthlyChartInst = new Chart(document.getElementById('monthlyChart'), {
+            type:'bar',
+            data:{
+                labels,
+                datasets:[
+                    { label:'Present', data:presentData, backgroundColor:'rgba(45,181,93,0.75)', borderRadius:6, yAxisID:'y' },
+                    { label:'Absent',  data:absentData,  backgroundColor:'rgba(239,68,68,0.75)',  borderRadius:6, yAxisID:'y' },
+                    { label:'Rate %',  data:pctLine, type:'line', borderColor:'#06b6d4', backgroundColor:'rgba(6,182,212,0.08)',
+                      tension:0.4, fill:false, pointBackgroundColor:'#06b6d4', pointRadius:4, yAxisID:'y2' }
+                ]
+            },
+            options:{
+                responsive:true,
+                interaction:{ mode:'index', intersect:false },
+                plugins:{ legend:{ labels:{ color:'#9ca3af', font:{size:11} } } },
+                scales:{
+                    x:  { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7280',font:{size:11}} },
+                    y:  { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7280',font:{size:11}}, beginAtZero:true, position:'left' },
+                    y2: { grid:{display:false}, ticks:{color:'#06b6d4',font:{size:11},callback:v=>v+'%'}, beginAtZero:true, max:100, position:'right' }
+                }
+            }
+        });
+    }
+
+    /* ── C. History Table ── */
+    function renderHistoryTable(records) {
+        const el = document.getElementById('historyBody');
+        if (!records.length) {
+            el.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted);">No attendance records found. Records are marked by your instructor.</td></tr>`;
+            return;
+        }
+        el.innerHTML = records.map((r, idx) => {
+            const d       = new Date(r.date);
+            const dateStr = d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+            const dayStr  = DAYS[d.getDay()];
+            const cid     = r.course ? r.course.courseId : '';
+            const ctitle  = courseMap[cid] || (r.course ? r.course.title : '') || ('Course #'+cid);
+            const pill    = r.status === 'PRESENT'
+                ? `<span class="pill-present"><i class="fas fa-check me-1"></i>Present</span>`
+                : `<span class="pill-absent"><i class="fas fa-times me-1"></i>Absent</span>`;
+            return `<tr>
+                <td style="color:var(--muted);">${idx+1}</td>
+                <td style="font-weight:600;">${dateStr}</td>
+                <td>${esc(ctitle)}</td>
+                <td style="color:var(--muted);">${dayStr}</td>
+                <td>${pill}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function populateCourseFilter() {
+        const sel = document.getElementById('filterCourse');
+        const seen = new Set();
+        allRecords.forEach(r => {
+            if (r.course && !seen.has(r.course.courseId)) {
+                seen.add(r.course.courseId);
+                const opt = document.createElement('option');
+                opt.value = r.course.courseId;
+                opt.textContent = courseMap[r.course.courseId] || ('Course #'+r.course.courseId);
+                sel.appendChild(opt);
+            }
+        });
+    }
+
+    function filterTable() {
+        const val = document.getElementById('filterCourse').value;
+        renderHistoryTable(!val ? allRecords : allRecords.filter(r => r.course && String(r.course.courseId) === val));
+    }
+</script>
+</body>
+</html>

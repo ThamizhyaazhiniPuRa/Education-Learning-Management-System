@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>ELMS – Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f0f13;
+            --sidebar: #0a0a0e;
+            --card: #16161d;
+            --card2: #1c1c26;
+            --green: #2db55d;
+            --green2: #1a8a40;
+            --blue: #3b82f6;
+            --purple: #8b5cf6;
+            --orange: #f59e0b;
+            --red: #ef4444;
+            --cyan: #06b6d4;
+            --muted: #9ca3af;
+            --border: #2a2a3a;
+            --text: #f1f5f9;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; overflow-x: hidden; }
+
+        /* ═══ SIDEBAR ═══ */
+        .sidebar {
+            position: fixed; top: 0; left: 0;
+            width: 240px; height: 100vh;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            padding: 0; z-index: 300;
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+        .sidebar.collapsed { width: 64px; }
+        .sidebar.collapsed .brand,
+        .sidebar.collapsed .brand-sub,
+        .sidebar.collapsed .admin-name,
+        .sidebar.collapsed .admin-role,
+        .sidebar.collapsed .nav-link-text { display: none; }
+        .sidebar.collapsed .nav-link-item { justify-content: center; font-size: 0; padding: 11px 0; }
+        .sidebar.collapsed .nav-link-item i { font-size: 0.9rem; }
+        .sidebar.collapsed .nav-section-label { display: none; }
+        .sidebar.collapsed .admin-mini-card { justify-content: center; padding: 10px; }
+        .sidebar-header {
+            padding: 18px 14px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sidebar-toggle { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:5px 7px; border-radius:7px; transition:0.2s; flex-shrink:0; margin-left:auto; }
+        .sidebar-toggle:hover { color:#fff; background:rgba(255,255,255,0.07); }
+        .brand { font-size: 1.4rem; font-weight: 900; color: #fff; }
+        .brand span { color: var(--green); }
+        .brand-sub { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+        .nav-section-label {
+            color: #4a4a6a; font-size: 0.65rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1.5px;
+            padding: 12px 8px 6px; margin-top: 8px;
+            display: flex; align-items: center; justify-content: space-between;
+            cursor: pointer;
+        }
+        .nav-section-label i { font-size: 0.62rem; transition: transform 0.2s ease; }
+        .nav-link-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 12px; border-radius: 10px;
+            color: var(--muted); text-decoration: none;
+            font-size: 0.86rem; font-weight: 500;
+            transition: all 0.2s; margin-bottom: 2px;
+            position: relative;
+        }
+        .nav-link-item i { width: 18px; text-align: center; font-size: 0.9rem; flex-shrink: 0; }
+        .nav-link-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .nav-link-item.active { color: #fff; background: linear-gradient(135deg, rgba(45,181,93,0.2), rgba(45,181,93,0.05)); }
+        .nav-link-item.active i { color: var(--green); }
+        .nav-link-item.active::before {
+            content: ''; position: absolute; left: 0; top: 50%;
+            transform: translateY(-50%);
+            width: 3px; height: 60%; background: var(--green); border-radius: 0 3px 3px 0;
+        }
+        .nav-badge {
+            margin-left: auto; background: var(--red);
+            color: #fff; font-size: 0.65rem; font-weight: 700;
+            padding: 2px 7px; border-radius: 10px;
+        }
+        .nav-link-item.logout { color: #ef4444; margin-top: 4px; }
+        .nav-link-item.logout:hover { background: rgba(239,68,68,0.1); }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .admin-mini-card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .admin-avatar {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--green), var(--green2));
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1rem; color: #fff; flex-shrink: 0;
+        }
+        .admin-name { font-weight: 600; font-size: 0.82rem; color: #fff; }
+        .admin-role { font-size: 0.7rem; color: var(--muted); }
+
+        /* ═══ TOPBAR ═══ */
+        .topbar {
+            position: fixed; top: 0; left: 240px; right: 0;
+            height: 64px; background: rgba(15,15,19,0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center;
+            padding: 0 28px; gap: 16px; z-index: 200;
+        }
+        .topbar-title { font-weight: 700; font-size: 1.1rem; flex: 1; }
+        .topbar-title span { color: var(--muted); font-weight: 400; font-size: 0.82rem; margin-left: 8px; }
+
+        .search-bar {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 14px;
+            display: flex; align-items: center; gap: 8px;
+            width: 220px;
+        }
+        .search-bar input {
+            background: transparent; border: none; outline: none;
+            color: #fff; font-size: 0.82rem; width: 100%;
+        }
+        .search-bar input::placeholder { color: #4a4a6a; }
+        .search-bar i { color: #4a4a6a; font-size: 0.8rem; }
+
+        .icon-btn {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: var(--card); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #fff; transition: 0.2s;
+            position: relative;
+        }
+        .icon-btn:hover { border-color: #888; background: rgba(255,255,255,0.12); }
+        /* Sidebar collapsed: show icons white */
+        .sidebar.collapsed .nav-link-item i { color: #fff !important; font-size: 0.95rem; }
+        .notif-dot {
+            position: absolute; top: 7px; right: 7px;
+            width: 8px; height: 8px; background: var(--red);
+            border-radius: 50%; border: 2px solid var(--bg);
+        }
+
+        /* ═══ MAIN ═══ */
+        .main { margin-left: 240px; margin-top: 64px; padding: 28px; min-height: calc(100vh - 64px); transition: margin-left 0.3s; }
+        .main.sb-collapsed { margin-left: 64px; }
+        .topbar.sb-collapsed { left: 64px; }
+
+        /* Tab navigation */
+        .tab-row { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        body.sidebar-collapsed .sidebar { width: 64px; }
+        body.sidebar-collapsed .sidebar .brand,
+        body.sidebar-collapsed .sidebar .brand-sub,
+        body.sidebar-collapsed .sidebar .nav-section-label,
+        body.sidebar-collapsed .sidebar .admin-name,
+        body.sidebar-collapsed .sidebar .admin-role { display: none; }
+        body.sidebar-collapsed .sidebar .nav-link-item { justify-content: center; font-size: 0; }
+        body.sidebar-collapsed .sidebar .nav-link-item i { font-size: 0.9rem; }
+        body.sidebar-collapsed .main,
+        body.sidebar-collapsed .topbar { margin-left: 64px; left: 64px; }
+
+        /* Notification & Profile Dropdowns */
+        .notif-dropdown { position:absolute; top:50px; right:0; width:320px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .notif-dropdown.show { display:block; }
+        .notif-header { padding:14px 18px; border-bottom:1px solid var(--border); font-weight:700; font-size:0.86rem; display:flex; justify-content:space-between; align-items:center; }
+        .notif-item { padding:12px 18px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px; }
+        .notif-item:last-child { border-bottom:none; }
+        .notif-icon { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:0.8rem; flex-shrink:0; }
+        .notif-text { font-size:0.78rem; color:var(--text); line-height:1.5; }
+        .notif-time { font-size:0.7rem; color:var(--muted); margin-top:2px; }
+        .profile-dropdown { position:absolute; top:50px; right:0; width:220px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:500; display:none; }
+        .profile-dropdown.show { display:block; }
+        .profile-dropdown-header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+        .profile-menu-item { display:flex; align-items:center; gap:10px; padding:10px 16px; color:var(--muted); font-size:0.83rem; font-weight:500; text-decoration:none; cursor:pointer; transition:0.18s; background:none; border:none; width:100%; text-align:left; }
+        .profile-menu-item i { width:16px; text-align:center; }
+        .profile-menu-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .profile-menu-item.danger { color:var(--red); }
+        .profile-menu-item.danger:hover { background:rgba(239,68,68,0.08); }
+        .profile-sep { border:none; border-top:1px solid var(--border); margin:4px 0; }
+
+        /* ═══ STAT CARDS ═══ */
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px 20px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); border-color: #3a3a5a; }
+        .stat-card::after {
+            content: ''; position: absolute;
+            top: -30px; right: -30px;
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            opacity: 0.07;
+        }
+        .stat-card.green::after  { background: var(--green); }
+        .stat-card.blue::after   { background: var(--blue); }
+        .stat-card.purple::after { background: var(--purple); }
+        .stat-card.orange::after { background: var(--orange); }
+        .stat-card.cyan::after   { background: var(--cyan); }
+
+        .stat-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; margin-bottom: 14px;
+        }
+        .stat-icon.green  { background: rgba(45,181,93,0.15);  color: var(--green); }
+        .stat-icon.blue   { background: rgba(59,130,246,0.15); color: var(--blue); }
+        .stat-icon.purple { background: rgba(139,92,246,0.15); color: var(--purple); }
+        .stat-icon.orange { background: rgba(245,158,11,0.15); color: var(--orange); }
+        .stat-icon.cyan   { background: rgba(6,182,212,0.15);  color: var(--cyan); }
+
+        .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .stat-value { font-size: 2rem; font-weight: 900; line-height: 1.1; margin: 6px 0 4px; }
+        .stat-change { font-size: 0.75rem; display: flex; align-items: center; gap: 4px; }
+        .stat-change.up   { color: var(--green); }
+        .stat-change.down { color: var(--red); }
+
+        /* ═══ SECTION HEADER ═══ */
+        .section-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .section-hdr h6 { font-weight: 700; font-size: 0.95rem; margin: 0; }
+        .section-hdr a { font-size: 0.78rem; color: var(--green); text-decoration: none; }
+        .section-hdr a:hover { text-decoration: underline; }
+
+        /* ═══ CHART CARD ═══ */
+        .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+        .chart-card canvas { max-height: 220px; }
+
+        /* ═══ TABLE CARD ═══ */
+        .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+        .table-card-header { padding: 18px 22px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .table-card-header h6 { margin: 0; font-weight: 700; font-size: 0.92rem; }
+        .tbl { width: 100%; border-collapse: collapse; }
+        .tbl thead th {
+            padding: 10px 22px; font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; color: var(--muted);
+            border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);
+        }
+        .tbl tbody td { padding: 13px 22px; font-size: 0.83rem; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text); }
+        .tbl tbody tr:last-child td { border-bottom: none; }
+        .tbl tbody tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .status-pill { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
+        .status-pill.active   { background: rgba(45,181,93,0.15);  color: var(--green); }
+        .status-pill.inactive { background: rgba(156,163,175,0.15); color: var(--muted); }
+
+        /* ═══ PROGRESS ═══ */
+        .prog-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .prog-row:last-child { margin-bottom: 0; }
+        .prog-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
+        .prog-label { font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; }
+        .prog-bar-wrap { flex: 1; background: #1a1a2e; border-radius: 4px; height: 6px; overflow: hidden; }
+        .prog-bar { height: 100%; border-radius: 4px; transition: width 1s ease; }
+        .prog-pct { font-size: 0.75rem; font-weight: 700; color: var(--muted); min-width: 34px; text-align: right; }
+        .theme-0 { background: rgba(45,181,93,0.15); color: var(--green); }
+        .theme-1 { background: rgba(59,130,246,0.15); color: var(--blue); }
+        .theme-2 { background: rgba(139,92,246,0.15); color: var(--purple); }
+        .theme-3 { background: rgba(245,158,11,0.15); color: var(--orange); }
+        .prog-bar.theme-0 { background: var(--green); }
+        .prog-bar.theme-1 { background: var(--blue); }
+        .prog-bar.theme-2 { background: var(--purple); }
+        .prog-bar.theme-3 { background: var(--orange); }
+
+        /* Activity Item */
+        .activity-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .activity-item:last-child { border-bottom: none; }
+        .act-dot { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+        .act-text { font-size: 0.8rem; }
+        .act-text strong { color: var(--text); font-weight: 600; }
+        .act-time { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+        /* Mini stat for student tab */
+        .mini-stat { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
+        .mini-stat-val { font-size:1.8rem; font-weight:800; }
+        .mini-stat-lbl { font-size:0.7rem; color:var(--muted); text-transform:uppercase; font-weight:600; }
+
+        /* Filter bar for student tab */
+        .filter-bar { display:flex; gap:10px; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px; }
+        .filter-input { background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:#fff; font-size:0.8rem; flex:1; }
+        .filter-select { background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--muted); font-size:0.8rem; }
+
+        .progress-bar-wrap { background: #1a1a2e; border-radius: 10px; height: 8px; overflow: hidden; }
+        .progress-bar-fill { background: var(--green); height: 100%; border-radius: 10px; }
+
+        /* ═══ RESPONSIVE ═══ */
+        .hamburger { display: flex; }
+        @media (max-width: 992px) {
+            .sidebar { transform: translateX(-100%); width: 240px !important; }
+            .sidebar.open { transform: translateX(0); }
+            .main, .topbar { margin-left: 0 !important; left: 0 !important; }
+            .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 299; }
+            .sidebar-overlay.show { display: block; }
+        }
+        @media (max-width: 768px) {
+            .main { padding: 16px; }
+            .topbar { padding: 0 16px; }
+            .search-bar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div>
+            <div class="brand">ELM<span>S</span></div>
+            <div class="brand-sub">Learning Management System</div>
+        </div>
+        <button class="sidebar-toggle" onclick="collapseSidebar()" title="Collapse sidebar"><i class="fas fa-bars"></i></button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section-label" onclick="toggleNavSection(this)">Main <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/dashboard" class="nav-link-item active">
+            <i class="fas fa-chart-pie"></i> <span class="nav-link-text">Dashboard</span>
+        </a>
+        <a href="/web/admin/courses" class="nav-link-item">
+            <i class="fas fa-book-open"></i> <span class="nav-link-text">Courses</span>
+        </a>
+        <a href="/web/admin/students" class="nav-link-item">
+            <i class="fas fa-user-graduate"></i> <span class="nav-link-text">Students</span>
+        </a>
+
+        <div class="nav-section-label" onclick="toggleNavSection(this)">Academics <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/attendance" class="nav-link-item">
+            <i class="fas fa-calendar-check"></i> <span class="nav-link-text">Attendance</span>
+        </a>
+        <a href="/web/admin/analytics" class="nav-link-item">
+            <i class="fas fa-chart-bar"></i> <span class="nav-link-text">Analytics</span>
+        </a>
+
+        <div class="nav-section-label" onclick="toggleNavSection(this)">System <i class="fas fa-chevron-down"></i></div>
+        <a href="/web/admin/profile" class="nav-link-item">
+            <i class="fas fa-user-shield"></i> <span class="nav-link-text">Profile</span>
+        </a>
+        <a href="/web/admin/settings" class="nav-link-item">
+            <i class="fas fa-cog"></i> <span class="nav-link-text">Settings</span>
+        </a>
+        <a href="#" class="nav-link-item logout" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> <span class="nav-link-text">Logout</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="admin-mini-card">
+            <div class="admin-avatar" id="sidebarAvatar">A</div>
+            <div>
+                <div class="admin-name" id="sidebarName">Admin</div>
+                <div class="admin-role">Administrator</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="topbar" id="topbar">
+    <button class="icon-btn hamburger me-2" onclick="smartToggleSidebar()" title="Toggle Sidebar">
+        <i class="fas fa-bars" style="color:#fff;font-size:1rem;"></i>
+    </button>
+    <div class="topbar-title">
+        Dashboard <span>/ Overview</span>
+    </div>
+    <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input placeholder="Search courses, students…">
+    </div>
+
+    <!-- Notification Bell -->
+    <div style="position:relative;">
+        <div class="icon-btn" id="notifBtn" onclick="toggleAdminNotif(event)" title="Notifications">
+            <i class="fas fa-bell" style="color:#f59e0b;font-size:1rem;"></i>
+            <div class="notif-dot" id="notifDot" style="display:none;"></div>
+        </div>
+        <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header">
+                <span><i class="fas fa-bell me-2" style="color:var(--orange);"></i>Notifications</span>
+                <button onclick="clearAdminNotifications(event)" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;padding:0;">Mark read</button>
+            </div>
+            <div id="notifBody" style="max-height:320px;overflow-y:auto;">
+                <div class="notif-item" style="justify-content:center;color:var(--muted);font-size:0.8rem;padding:24px;">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Loading…
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile -->
+    <div style="position:relative;">
+        <div class="icon-btn" id="profileBtn" onclick="toggleAdminProfile(event)" title="Profile">
+            <i class="fas fa-user-shield" style="color:#2db55d;font-size:1rem;"></i>
+        </div>
+        <div class="profile-dropdown" id="profileDropdown">
+            <div class="profile-dropdown-header">
+                <div class="admin-avatar" style="width:32px;height:32px;font-size:0.85rem;">A</div>
+                <div><div style="font-weight:700;font-size:0.83rem;color:#fff;" id="adminProfileName">Admin</div><div style="font-size:0.7rem;color:var(--green);">Administrator</div></div>
+            </div>
+            <a href="/web/admin/profile" class="profile-menu-item"><i class="fas fa-user-shield"></i> My Profile</a>
+            <a href="/web/admin/settings" class="profile-menu-item"><i class="fas fa-cog"></i> Settings</a>
+            <hr class="profile-sep">
+            <button class="profile-menu-item danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+        </div>
+    </div>
+
+    <div class="icon-btn" title="Open Student Dashboard" onclick="window.open('/student/dashboard', '_blank')">
+        <i class="fas fa-user" style="color:#2db55d;font-size:1rem;"></i>
+    </div>
+</div>
+
+<div class="main" id="mainArea">
+
+    <div th:if="${message}" class="alert alert-success py-2 mb-3" th:text="${message}"></div>
+
+    <div class="tab-row">
+        <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+        <button class="tab-btn" data-tab="students" onclick="switchTab('students')">Student Progress</button>
+    </div>
+
+    <!-- ═══ TAB PANEL: OVERVIEW ═══ -->
+    <div class="tab-panel active" data-tab="overview">
+
+        <div class="row g-3 mb-4">
+            <div class="col-xl-2-4 col-md-4 col-6" style="flex: 0 0 20%; max-width: 20%;">
+                <div class="stat-card green">
+                    <div class="stat-icon green"><i class="fas fa-book-open"></i></div>
+                    <div class="stat-label">Total Courses</div>
+                    <div class="stat-value" th:text="${totalCourses != null ? totalCourses : 0}">0</div>
+                    <div class="stat-change up"><i class="fas fa-arrow-up"></i> From Database</div>
+                </div>
+            </div>
+            <div class="col-xl-2-4 col-md-4 col-6" style="flex: 0 0 20%; max-width: 20%;">
+                <div class="stat-card blue">
+                    <div class="stat-icon blue"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-label">Active Courses</div>
+                    <div class="stat-value text-success" th:text="${activeCourses != null ? activeCourses : 0}">0</div>
+                    <div class="stat-change up"><i class="fas fa-arrow-up"></i> Running now</div>
+                </div>
+            </div>
+            <div class="col-xl-2-4 col-md-4 col-6" style="flex: 0 0 20%; max-width: 20%;">
+                <div class="stat-card purple">
+                    <div class="stat-icon purple"><i class="fas fa-user-graduate"></i></div>
+                    <div class="stat-label">Total Students</div>
+                    <div class="stat-value" th:text="${totalStudents != null ? totalStudents : 0}">0</div>
+                    <div class="stat-change up"><i class="fas fa-arrow-up"></i> Enrolled</div>
+                </div>
+            </div>
+            <div class="col-xl-2-4 col-md-6 col-6" style="flex: 0 0 20%; max-width: 20%;">
+                <div class="stat-card orange">
+                    <div class="stat-icon orange"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-label">Assignments</div>
+                    <div class="stat-value" th:text="${totalAssignments != null ? totalAssignments : 0}">0</div>
+                    <div class="stat-change" th:classappend="${pendingAssignments > 0 ? 'down' : 'up'}">
+                        <i class="fas fa-clock"></i> <span th:text="${pendingAssignments != null ? pendingAssignments : 0}">0</span> pending
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2-4 col-md-6 col-6" style="flex: 0 0 20%; max-width: 20%;">
+                <div class="stat-card cyan">
+                    <div class="stat-icon cyan"><i class="fas fa-calendar-check"></i></div>
+                    <div class="stat-label">Attendance</div>
+                    <div class="stat-value"><span th:text="${attendancePercentage != null ? attendancePercentage : 0}">0</span>%</div>
+                    <div class="stat-change up"><i class="fas fa-chart-line"></i> Overall</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <div class="section-hdr mb-3">
+                        <h6><i class="fas fa-chart-line me-2 text-success"></i>Student Performance Overview</h6>
+                        
+                    </div>
+                    <canvas id="perfChart"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-card h-100">
+                    <div class="section-hdr mb-3">
+                        <h6><i class="fas fa-chart-pie me-2 text-blue"></i>Course Distribution</h6>
+                    </div>
+                    <canvas id="donutChart"></canvas>
+                    <div class="mt-3" id="donutLegend"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-8">
+                <div class="chart-card h-100">
+                    <div class="section-hdr mb-3">
+                        <h6><i class="fas fa-fire me-2 text-orange"></i>Course Engagement</h6>
+                    </div>
+                    <div id="engagementList">
+                        <th:block th:if="${courseEngagement != null and !courseEngagement.isEmpty()}">
+                            <div th:each="ce, iterStat : ${courseEngagement}" class="prog-row">
+                                <div class="prog-icon" th:classappend="${' theme-' + (iterStat.index % 4)}">
+                                    <th:block th:switch="${iterStat.index % 4}">
+                                        <i th:case="0" class="fas fa-book"></i>
+                                        <i th:case="1" class="fas fa-sitemap"></i>
+                                        <i th:case="2" class="fas fa-globe"></i>
+                                        <i th:case="*" class="fas fa-database"></i>
+                                    </th:block>
+                                </div>
+                                <div style="flex:1;">
+                                    <div class="prog-label" th:text="${ce.title}">Course Name</div>
+                                    <div class="prog-bar-wrap">
+                                        <div class="prog-bar" th:classappend="${' theme-' + (iterStat.index % 4)}"
+                                             th:style="'width:' + ${ce.engagement} + '%;'">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="prog-pct" th:text="${ce.engagement} + '%'"></div>
+                            </div>
+                        </th:block>
+                        <div th:if="${courseEngagement == null or courseEngagement.isEmpty()}" class="text-muted text-center py-4">
+                            <i class="fas fa-info-circle me-2"></i>No course data available
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="chart-card h-100" style="max-height:320px; overflow-y:auto;">
+                    <div class="section-hdr mb-2">
+                        <h6><i class="fas fa-stream me-2 text-cyan"></i>Recent Activity</h6>
+                    </div>
+                    <th:block th:if="${recentAssignments != null and !recentAssignments.isEmpty()}">
+                        <div th:each="assignment, iterStat : ${recentAssignments}" class="activity-item">
+                            <div class="act-dot" th:classappend="${' theme-' + (iterStat.index % 4)}">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="act-text">
+                                <strong th:text="${assignment.title}">Assignment</strong> 
+                                <span th:if="${assignment.course != null}">in <span th:text="${assignment.course.title}">Course</span></span>
+                                <div class="act-time" th:if="${assignment.dueDate != null}">
+                                    Due: <span th:text="${#dates.format(assignment.dueDate, 'MMM dd, yyyy')}">Date</span>
+                                </div>
+                            </div>
+                        </div>
+                    </th:block>
+                    <th:block th:if="${students != null and !students.isEmpty()}">
+                        <div th:each="student, iterStat : ${students}" th:if="${iterStat.index < 3}" class="activity-item">
+                            <div class="act-dot" style="background:rgba(6,182,212,0.15); color:var(--cyan);">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="act-text">
+                                <strong th:text="${student.name}">Student</strong> enrolled
+                                <div class="act-time" th:text="${student.program}">Program</div>
+                            </div>
+                        </div>
+                    </th:block>
+                    <div th:if="${(recentAssignments == null or recentAssignments.isEmpty()) and (students == null or students.isEmpty())}" 
+                         class="text-muted text-center py-4">
+                        <i class="fas fa-info-circle me-2"></i>No recent activity
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-card-header">
+                <h6><i class="fas fa-book-open me-2 text-success"></i>Courses Overview</h6>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    
+                   
+                    <a href="/web/admin/courses" style="font-size:0.78rem;color:var(--green);text-decoration:none;">View All <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="tbl">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Semester</th>
+                            <th>Credits</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="course : ${courses}" class="course-row" th:data-status="${course.status}">
+                            <td style="color:var(--green); font-weight:700;" th:text="'#' + ${course.courseId}"></td>
+                            <td style="font-weight:600;" th:text="${course.title}"></td>
+                            <td style="color:var(--muted);" th:text="${course.semester != null ? course.semester : 'N/A'}"></td>
+                            <td style="color:var(--muted);" th:text="${course.credits != null ? course.credits : 0}"></td>
+                            <td>
+                                <span class="status-pill" th:classappend="${course.status == 'ACTIVE' ? 'active' : 'inactive'}" th:text="${course.status != null ? course.status : 'INACTIVE'}"></span>
+                            </td>
+                            <td>
+                                <a th:href="@{'/web/admin/courses/content'(courseId=${course.courseId},title=${course.title})}"
+                                   style="color:var(--green); text-decoration:none; font-weight:600; font-size:0.78rem;">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ TAB PANEL: STUDENT PROGRESS ═══ -->
+    <div class="tab-panel" data-tab="students" style="display:none;">
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="mini-stat">
+                    <div class="mini-stat-val" id="statActive">0</div>
+                    <div class="mini-stat-lbl">Active Enrolled</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="mini-stat">
+                    <div class="mini-stat-val" id="statGraduated">0</div>
+                    <div class="mini-stat-lbl">Graduated</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="mini-stat">
+                    <div class="mini-stat-val" id="statTotalStudents">0</div>
+                    <div class="mini-stat-lbl">Total Students</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="mini-stat">
+                    <div class="mini-stat-val" id="statAvgProgress">0%</div>
+                    <div class="mini-stat-lbl">Avg Progress</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-card-header flex-column flex-sm-row gap-2">
+                <h6><i class="fas fa-user-graduate me-2 text-blue"></i>Student Performance & Status</h6>
+                <div class="filter-bar border-0 p-0 bg-transparent">
+                    <input type="text" id="studentSearch" class="filter-input" placeholder="Search by name..." onkeyup="filterStudentsTable()">
+                    <select id="programFilter" class="filter-select" onchange="filterStudentsTable()">
+                        <option value="">All Programs</option>
+                        <option value="B.Tech">B.Tech</option>
+                        <option value="M.Tech">M.Tech</option>
+                        <option value="MBA">MBA</option>
+                    </select>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="tbl" id="studentsReportTable">
+                    <thead>
+                        <tr>
+                            <th>StudentID</th>
+                            <th>Name</th>
+                            <th>Program</th>
+                            <th>Status</th>
+                            <th>Progress Meter</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="student : ${students}">
+                            <td style="color:var(--blue); font-weight:700;" th:text="${student.studentId}"></td>
+                            <td style="font-weight:600;" th:text="${student.name}"></td>
+                            <td th:text="${student.program}"></td>
+                            <td>
+                                <span class="status-pill" 
+                                      th:classappend="${student.enabled} ? 'active' : 'inactive'" 
+                                      th:text="${student.enabled} ? 'ACTIVE' : 'INACTIVE'">
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress-bar-wrap w-100" style="max-width:120px;">
+                                        <div class="progress-bar-fill" style="width: 80%;"></div>
+                                    </div>
+                                    <span class="text-muted" style="font-size:0.75rem;">80%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ SYSTEM CORE CONTROL JS ═══ -->
+<script inline="javascript">
+    // Apply theme from settings
+    (function applyTheme() {
+        const theme = localStorage.getItem('uiTheme') || 'DARK';
+        const accent = localStorage.getItem('accentColor') || '#2db55d';
+        const r = document.documentElement;
+        r.style.setProperty('--green', accent);
+        r.style.setProperty('--green2', accent);
+        if (theme === 'LIGHT') {
+            r.style.setProperty('--bg', '#f8fafc');
+            r.style.setProperty('--sidebar', '#ffffff');
+            r.style.setProperty('--card', '#ffffff');
+            r.style.setProperty('--card2', '#f1f5f9');
+            r.style.setProperty('--text', '#0f172a');
+            r.style.setProperty('--muted', '#64748b');
+            r.style.setProperty('--border', '#dbeafe');
+        } else if (theme === 'AMOLED') {
+            r.style.setProperty('--bg', '#000');
+            r.style.setProperty('--sidebar', '#000');
+            r.style.setProperty('--card', '#0b0b10');
+            r.style.setProperty('--card2', '#111117');
+            r.style.setProperty('--text', '#f8fafc');
+            r.style.setProperty('--muted', '#94a3b8');
+            r.style.setProperty('--border', '#1f2937');
+        }
+    })();
+
+    function smartToggleSidebar() {
+        if (window.innerWidth <= 992) {
+            toggleSidebar();
+        } else {
+            collapseSidebar();
+        }
+    }
+
+    function toggleSidebar() {
+        const sb = document.getElementById('sidebar');
+        sb.classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('show');
+    }
+
+    function collapseSidebar() {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+        document.getElementById('topbar').classList.toggle('sb-collapsed');
+        document.getElementById('mainArea').classList.toggle('sb-collapsed');
+    }
+
+    // Admin notification
+    let adminNotifViewed = false;
+    function toggleAdminNotif(e) {
+        e.stopPropagation();
+        document.getElementById('profileDropdown').classList.remove('show');
+        document.getElementById('notifDropdown').classList.toggle('show');
+        if (document.getElementById('notifDropdown').classList.contains('show')) {
+            adminNotifViewed = true;
+            document.getElementById('notifDot').style.display = 'none';
+        }
+    }
+    function toggleAdminProfile(e) {
+        e.stopPropagation();
+        document.getElementById('notifDropdown').classList.remove('show');
+        document.getElementById('profileDropdown').classList.toggle('show');
+    }
+    function clearAdminNotifications(e) {
+        e.stopPropagation();
+        adminNotifViewed = true;
+        document.getElementById('notifDot').style.display = 'none';
+        document.getElementById('notifBody').innerHTML = `<div class="notif-item" style="justify-content:center;color:var(--muted);font-size:0.8rem;padding:24px;"><i class="fas fa-check-circle me-2" style="color:var(--green);"></i>No new notifications</div>`;
+    }
+    document.addEventListener('click', () => {
+        document.getElementById('notifDropdown')?.classList.remove('show');
+        document.getElementById('profileDropdown')?.classList.remove('show');
+    });
+
+    // Load pending assignment notifications from backend
+    async function loadAdminNotifications() {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+            const res = await fetch('/api/instructor/assignments/all', { headers });
+            if (!res.ok) return;
+            const data = await res.json();
+            const pending = data.filter(a => a.assignmentStatus === 'PENDING');
+            const notifBody = document.getElementById('notifBody');
+            if (!pending.length) {
+                notifBody.innerHTML = `<div class="notif-item" style="justify-content:center;color:var(--muted);font-size:0.8rem;padding:24px;"><i class="fas fa-check-circle me-2" style="color:var(--green);"></i>No pending notifications</div>`;
+            } else {
+                document.getElementById('notifDot').style.display = 'block';
+                notifBody.innerHTML = pending.map(a => `
+                    <div class="notif-item">
+                        <div class="notif-icon" style="background:rgba(245,158,11,0.15);color:var(--orange);"><i class="fas fa-hourglass-half"></i></div>
+                        <div>
+                            <div class="notif-text">Course <strong>${(a.title||'').replace(/</g,'&lt;')}</strong> — instructor assignment pending response</div>
+                            <div class="notif-time" style="color:var(--orange);font-weight:700;"><i class="fas fa-clock me-1"></i>Awaiting instructor acceptance</div>
+                        </div>
+                    </div>`).join('');
+            }
+        } catch(_) {}
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        
+        const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        const targetPanel = document.querySelector(`.tab-panel[data-tab="${tabId}"]`);
+        
+        if (targetBtn) targetBtn.classList.add('active');
+        if (targetPanel) {
+            targetPanel.style.display = 'block';
+            targetPanel.classList.add('active');
+        }
+        
+        document.querySelectorAll('.tab-panel:not(.active)').forEach(panel => panel.style.display = 'none');
+    }
+
+    function toggleNavSection(labelEl) {
+        const icon = labelEl.querySelector('i');
+        const collapse = !labelEl.classList.contains('collapsed');
+        labelEl.classList.toggle('collapsed', collapse);
+        if (icon) icon.style.transform = collapse ? 'rotate(-90deg)' : 'rotate(0deg)';
+
+        let next = labelEl.nextElementSibling;
+        while (next && !next.classList.contains('nav-section-label')) {
+            next.style.display = collapse ? 'none' : 'flex';
+            next = next.nextElementSibling;
+        }
+    }
+
+    function filterStudentsTable() {
+        const searchInput = document.getElementById('studentSearch').value.toLowerCase();
+        const programFilter = document.getElementById('programFilter').value;
+        const rows = document.querySelectorAll('#studentsReportTable tbody tr');
+
+        rows.forEach(row => {
+            const name = row.cells[1].textContent.toLowerCase();
+            const id = row.cells[0].textContent.toLowerCase();
+            const program = row.cells[2].textContent;
+
+            const matchesSearch = name.includes(searchInput) || id.includes(searchInput);
+            const matchesProgram = !programFilter || program === programFilter;
+
+            if (matchesSearch && matchesProgram) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+   
+
+    function logout() {
+        if(confirm('Are you sure you want to exit?')) {
+            window.location.href = '/login?logout';
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", async function() {
+        // Load admin notifications
+        loadAdminNotifications();
+
+        // Admin name from localStorage
+        const adminName = localStorage.getItem('name') || 'Admin';
+        const el = document.getElementById('adminProfileName');
+        if (el) el.textContent = adminName;
+        const av = document.getElementById('sidebarAvatar');
+        if (av) av.textContent = adminName.charAt(0).toUpperCase();
+        const sn = document.getElementById('sidebarName');
+        if (sn) sn.textContent = adminName;
+        const rows = document.querySelectorAll('#studentsReportTable tbody tr');
+        let active = 0, graduated = 0;
+        rows.forEach(r => {
+            const st = (r.cells[3]?.textContent || '').trim().toUpperCase();
+            if (st.includes('ACTIVE')) active++;
+            else if (st.includes('GRADUATED')) graduated++;
+        });
+        document.getElementById('statActive').innerText = active;
+        document.getElementById('statGraduated').innerText = graduated;
+        document.getElementById('statTotalStudents').innerText = rows.length;
+
+        const token = localStorage.getItem('token');
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const [learningRes, overviewRes] = await Promise.all([
+            fetch('/api/analytics/reports/learning', { headers }),
+            fetch('/api/analytics/overview', { headers })
+        ]);
+        const learning = learningRes.ok ? await learningRes.json() : [];
+        const overview = overviewRes.ok ? await overviewRes.json() : null;
+
+        const avgProgress = learning.length
+            ? Math.round(learning.reduce((s, r) => s + (r.continueLearning?.length
+                ? Math.round(r.continueLearning.reduce((a, c) => a + (c.progress || 0), 0) / r.continueLearning.length)
+                : 0), 0) / learning.length)
+            : 0;
+        document.getElementById('statAvgProgress').innerText = avgProgress + '%';
+
+        const perfTop = [...learning].slice(0, 8);
+        const perfLabels = perfTop.map(r => (r.name || 'Student').length > 10 ? (r.name || 'Student').slice(0, 10) + '…' : (r.name || 'Student'));
+        const perfValues = perfTop.map(r => r.cgpa10 || 0);
+
+        const ctxPerf = document.getElementById('perfChart');
+        if (ctxPerf) {
+            new Chart(ctxPerf, {
+                type: 'bar',
+                data: {
+                    labels: perfLabels.length ? perfLabels : ['No data'],
+                    datasets: [{
+                        label: 'CGPA / 10',
+                        data: perfValues.length ? perfValues : [0],
+                        backgroundColor: 'rgba(45, 181, 93, 0.55)',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 0, max: 10, ticks: { color: '#9ca3af' } },
+                        x: { ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+        }
+
+        const activeCourses = overview?.activeCourses || 0;
+        const inactiveCourses = overview?.inactiveCourses || 0;
+        const courseLabels = [];
+        const courseData = [];
+        const courseColors = [];
+        if (activeCourses > 0) { courseLabels.push(`Active (${activeCourses})`); courseData.push(activeCourses); courseColors.push('#2db55d'); }
+        if (inactiveCourses > 0) { courseLabels.push(`Inactive (${inactiveCourses})`); courseData.push(inactiveCourses); courseColors.push('#6b7280'); }
+        if (!courseLabels.length) { courseLabels.push('No Courses'); courseData.push(1); courseColors.push('#374151'); }
+
+        const ctxDonut = document.getElementById('donutChart');
+        if (ctxDonut) {
+            new Chart(ctxDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: courseLabels,
+                    datasets: [{ data: courseData, backgroundColor: courseColors, borderWidth: 0 }]
+                },
+                options: { responsive: true, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af' } } } }
+            });
+        }
+
+        const legend = document.getElementById('donutLegend');
+        if (legend && overview) {
+            legend.innerHTML = `
+                <div style="font-size:0.78rem;color:var(--muted);">Avg CGPA: <span style="color:var(--green);font-weight:700;">${overview.avgCgpa || 0}</span></div>
+                <div style="font-size:0.78rem;color:var(--muted);">Total XP Points: <span style="color:var(--cyan);font-weight:700;">${overview.totalXpPoints || 0}</span></div>
+            `;
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ELMS – Theme Settings</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    :root{--bg:#0f0f13;--card:#16161d;--card2:#1c1c26;--text:#f1f5f9;--muted:#9ca3af;--border:#2a2a3a;--accent:#2db55d}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,sans-serif}
+    .wrap{max-width:900px;margin:auto;padding:24px}.cardx{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+    select,input{background:var(--card2)!important;border:1px solid var(--border)!important;color:var(--text)!important}
+    .sw{display:flex;gap:10px}.dot{width:34px;height:34px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+    .dot.active{border-color:#fff}
+    .preview{background:var(--card2);border:1px solid var(--border);padding:14px;border-radius:10px}
+    .btnx{background:linear-gradient(135deg,var(--accent),#1a8a40);border:none;color:#fff;padding:10px 14px;border-radius:10px}
+    .mut{color:var(--muted);font-size:.8rem}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h4>Theme Settings</h4><div class="mut mb-3">Applies to Admin + Student pages</div>
+
+  <div class="cardx mb-3">
+    <label class="form-label">Theme Mode</label>
+    <select id="theme" class="form-select mb-3" onchange="preview()">
+      <option value="DARK">Dark</option><option value="LIGHT">Light</option><option value="AMOLED">AMOLED</option>
+    </select>
+
+    <label class="form-label">Accent Color</label>
+    <div class="sw mb-3">
+      <div class="dot active" data-c="#2db55d" style="background:#2db55d" onclick="pick(this)"></div>
+      <div class="dot" data-c="#3b82f6" style="background:#3b82f6" onclick="pick(this)"></div>
+      <div class="dot" data-c="#8b5cf6" style="background:#8b5cf6" onclick="pick(this)"></div>
+      <div class="dot" data-c="#f59e0b" style="background:#f59e0b" onclick="pick(this)"></div>
+      <div class="dot" data-c="#ef4444" style="background:#ef4444" onclick="pick(this)"></div>
+    </div>
+
+    <div class="preview mb-3">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>Preview Card</strong><span id="pAccent" style="color:var(--accent);font-weight:700">Accent</span>
+      </div>
+      <div class="mut">This is how cards will look across dashboards.</div>
+    </div>
+
+    <button class="btnx" onclick="save()">Save Theme</button>
+    <span class="mut ms-2" id="status"></span>
+  </div>
+</div>
+
+<script>
+const token=localStorage.getItem('token');
+const role=(localStorage.getItem('role')||'').toUpperCase().replace('ROLE_','');
+if(!token||!(role==='ADMIN'||role==='STUDENT')) location.href='/login';
+
+let selectedAccent = localStorage.getItem('accentColor') || '#2db55d';
+document.getElementById('theme').value = localStorage.getItem('uiTheme') || 'DARK';
+
+function apply(mode, accent){
+  const r=document.documentElement;
+  r.style.setProperty('--accent',accent);
+  if(mode==='LIGHT'){
+    r.style.setProperty('--bg','#f8fafc'); r.style.setProperty('--card','#ffffff'); r.style.setProperty('--card2','#f1f5f9'); r.style.setProperty('--text','#0f172a'); r.style.setProperty('--muted','#64748b'); r.style.setProperty('--border','#dbeafe');
+  } else if(mode==='AMOLED'){
+    r.style.setProperty('--bg','#000'); r.style.setProperty('--card','#0b0b10'); r.style.setProperty('--card2','#111117'); r.style.setProperty('--text','#f8fafc'); r.style.setProperty('--muted','#94a3b8'); r.style.setProperty('--border','#1f2937');
+  } else {
+    r.style.setProperty('--bg','#0f0f13'); r.style.setProperty('--card','#16161d'); r.style.setProperty('--card2','#1c1c26'); r.style.setProperty('--text','#f1f5f9'); r.style.setProperty('--muted','#9ca3af'); r.style.setProperty('--border','#2a2a3a');
+  }
+}
+function preview(){ apply(theme.value,selectedAccent); }
+function pick(el){
+  document.querySelectorAll('.dot').forEach(d=>d.classList.remove('active')); el.classList.add('active');
+  selectedAccent=el.dataset.c; preview();
+}
+async function save(){
+  const payload={ uiTheme:theme.value, accentColor:selectedAccent };
+  localStorage.setItem('uiTheme',payload.uiTheme);
+  localStorage.setItem('accentColor',payload.accentColor);
+  // optional backend sync
+  try{
+    await fetch('/api/admin/settings/update',{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  }catch{}
+  status.textContent='Saved. Applied globally.';
+}
+preview();
+</script>
+</body>
+</html>

@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>ELMS – My Analytics</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg:#0f0f13; --sidebar:#0a0a0e; --card:#16161d; --card2:#1c1c26;
+            --green:#2db55d; --green2:#1a8a40; --blue:#3b82f6; --purple:#8b5cf6;
+            --orange:#f59e0b; --red:#ef4444; --cyan:#06b6d4; --yellow:#fbbf24;
+            --muted:#9ca3af; --border:#2a2a3a; --text:#f1f5f9;
+        }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; font-size:14px; }
+
+        /* Sidebar */
+        .sidebar { position:fixed; top:0; left:0; width:240px; height:100vh; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:300; transition:width 0.3s, transform 0.3s; }
+        .sidebar.collapsed { width:64px; }
+        .sidebar.collapsed .brand-sub,.sidebar.collapsed .nav-label-text,.sidebar.collapsed .nav-section-label,.sidebar.collapsed .stu-name,.sidebar.collapsed .stu-role { display:none; }
+        .sidebar.collapsed .nav-item { justify-content:center; padding:11px 0; }
+        .sidebar.collapsed .nav-item i { color:#fff !important; font-size:0.95rem; }
+        .sidebar.collapsed .stu-card { justify-content:center; padding:10px; }
+        .sidebar-header { padding:18px 14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+        .sidebar-toggle { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:5px 7px; border-radius:7px; transition:0.2s; flex-shrink:0; margin-left:auto; }
+        .sidebar-toggle:hover { color:#fff; background:rgba(255,255,255,0.07); }
+        .brand { font-size:1.4rem; font-weight:900; color:#fff; }
+        .brand span { color:var(--green); }
+        .brand-sub { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+        .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+        .nav-section-label { color:#4a4a6a; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; padding:12px 8px 5px; margin-top:8px; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:var(--muted); text-decoration:none; font-size:0.86rem; font-weight:500; transition:all 0.2s; margin-bottom:2px; position:relative; cursor:pointer; border:none; background:transparent; width:100%; }
+        .nav-item i { width:18px; text-align:center; font-size:0.9rem; flex-shrink:0; }
+        .nav-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-item.active { color:#fff; background:linear-gradient(135deg,rgba(45,181,93,0.2),rgba(45,181,93,0.04)); }
+        .nav-item.active i { color:var(--green); }
+        .nav-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--green); border-radius:0 3px 3px 0; }
+        .nav-item.logout { color:var(--red); }
+        .nav-item.logout:hover { background:rgba(239,68,68,0.08); }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .stu-card { background:var(--card); border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; }
+        .stu-avatar { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--blue),#1d4ed8); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem; color:#fff; flex-shrink:0; }
+        .stu-name { font-weight:600; font-size:0.82rem; color:#fff; }
+        .stu-role { font-size:0.7rem; color:var(--muted); }
+        .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:299; }
+
+        /* Topbar */
+        .topbar { position:fixed; top:0; left:240px; right:0; height:64px; background:rgba(15,15,19,0.97); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 28px; gap:16px; z-index:200; transition:left 0.3s; }
+        .topbar.sb-collapsed { left:64px; }
+        .topbar-title { font-weight:700; font-size:1.1rem; flex:1; }
+        .topbar-title span { color:var(--muted); font-weight:400; font-size:0.82rem; margin-left:8px; }
+        .icon-btn { width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; transition:0.2s; text-decoration:none; position:relative; }
+        .icon-btn:hover { border-color:#888; background:rgba(255,255,255,0.12); }
+        .icon-btn i[class*="fa-bell"]   { color:#f59e0b !important; font-size:1rem; }
+        .icon-btn i[class*="fa-user"]   { color:#2db55d  !important; font-size:1rem; }
+        .icon-btn i[class*="fa-shield"] { color:var(--green)  !important; font-size:1rem; }
+        .icon-btn i[class*="fa-bars"]   { color:#fff          !important; font-size:1rem; }
+
+        /* Main */
+        .main { margin-left:240px; margin-top:64px; padding:28px; transition:margin-left 0.3s; }
+        .main.sb-collapsed { margin-left:64px; }
+
+        /* Cards */
+        .chart-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px; }
+        .stat-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px; transition:transform 0.2s,border-color 0.2s; }
+        .stat-card:hover { transform:translateY(-3px); border-color:#3a3a5a; }
+        .stat-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1rem; margin-bottom:10px; }
+        .stat-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; font-weight:600; letter-spacing:0.5px; }
+        .stat-value { font-size:1.8rem; font-weight:900; line-height:1.1; margin:5px 0 3px; }
+        .stat-sub { font-size:0.72rem; color:var(--muted); }
+        .prog-wrap { background:var(--card2); border-radius:6px; height:8px; overflow:hidden; }
+        .prog-fill { height:100%; border-radius:6px; transition:width 0.8s ease; }
+        .rubric-box { border-radius:12px; padding:16px; text-align:center; }
+        .tbl { width:100%; border-collapse:collapse; }
+        .tbl thead th { padding:10px 16px; font-size:0.7rem; font-weight:700; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); background:rgba(255,255,255,0.02); }
+        .tbl tbody td { padding:12px 16px; font-size:0.83rem; border-bottom:1px solid var(--border); vertical-align:middle; }
+        .tbl tbody tr:last-child td { border-bottom:none; }
+        .tbl tbody tr:hover td { background:rgba(255,255,255,0.02); }
+        .grade-pill { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.72rem; font-weight:800; }
+
+        /* XP Stage bar */
+        .xp-bar-wrap { background:var(--card2); border-radius:8px; height:10px; margin-top:8px; overflow:hidden; }
+        .xp-bar-fill { height:100%; border-radius:8px; background:linear-gradient(90deg,var(--orange),var(--yellow)); transition:width 1s ease; }
+
+        .hamburger { display:flex; }
+        @media (max-width:992px) {
+            .sidebar { transform:translateX(-100%); }
+            .sidebar.open { transform:translateX(0); }
+            .sidebar-overlay.show { display:block; }
+            .main, .topbar { margin-left:0; left:0; }
+        }
+        @media (max-width:768px) { .main { padding:16px; } }
+    </style>
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div>
+            <div class="brand">ELM<span>S</span></div>
+            <div class="brand-sub">Learning Management</div>
+        </div>
+        <button class="sidebar-toggle" onclick="collapseSidebar()" title="Collapse sidebar"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a href="/student/dashboard"   class="nav-item"><i class="fas fa-chart-pie"></i> <span class="nav-label-text">Dashboard</span></a>
+        <a href="/student/courses"     class="nav-item"><i class="fas fa-book-open"></i> <span class="nav-label-text">My Courses</span></a>
+        <div class="nav-section-label">Academics</div>
+        <a href="/student/attendance"  class="nav-item"><i class="fas fa-calendar-check"></i> <span class="nav-label-text">Attendance</span></a>
+        <a href="/student/grades"      class="nav-item"><i class="fas fa-star"></i> <span class="nav-label-text">Grades</span></a>
+        <a href="/student/analytics"   class="nav-item active"><i class="fas fa-chart-bar"></i> <span class="nav-label-text">My Analytics</span></a>
+        <div class="nav-section-label">Account</div>
+        <a href="/student/profile"     class="nav-item"><i class="fas fa-user-circle" style="color:#2db55d;font-size:1rem;"></i> <span class="nav-label-text">Profile</span></a>
+        <button class="nav-item logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span class="nav-label-text">Logout</span></button>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="stu-card">
+            <div class="stu-avatar" id="sidebarAvatar">S</div>
+            <div><div class="stu-name" id="sidebarName">Student</div><div class="stu-role">Student</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar" id="topbar">
+    <button class="icon-btn hamburger me-2" onclick="smartToggleSidebar()" title="Toggle Sidebar"><i class="fas fa-bars" style="color:#fff;font-size:1rem;"></i></button>
+    <div class="topbar-title">My Analytics <span>/ Performance Overview</span></div>
+    <a href="/student/dashboard" class="icon-btn" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></a>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="mainContent">
+
+    <!-- Student Header -->
+    <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+        <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.4rem;color:#fff;" id="studentInitial">S</div>
+        <div>
+            <h4 class="fw-bold mb-0" id="studentName">–</h4>
+            <div style="color:var(--muted);font-size:0.82rem;" id="studentMeta">–</div>
+        </div>
+        <div style="margin-left:auto;" id="statusBadgeWrap"></div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(251,191,36,0.15);color:#fbbf24;"><i class="fas fa-graduation-cap"></i></div>
+                <div class="stat-label">CGPA</div>
+                <div class="stat-value" id="sCgpa">–</div>
+                <div class="stat-sub" id="sLetterGrade">out of 10</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--orange);"><i class="fas fa-star"></i></div>
+                <div class="stat-label">XP Points</div>
+                <div class="stat-value" id="sXp">–</div>
+                <div class="stat-sub" id="sXpStage">stage</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(6,182,212,0.15);color:var(--cyan);"><i class="fas fa-calendar-check"></i></div>
+                <div class="stat-label">Attendance</div>
+                <div class="stat-value" id="sAttendance">–</div>
+                <div class="stat-sub" id="sAttDetail">records</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(139,92,246,0.15);color:var(--purple);"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-label">Submissions</div>
+                <div class="stat-value" id="sSubmissions">–</div>
+                <div class="stat-sub">graded</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(59,130,246,0.15);color:var(--blue);"><i class="fas fa-book-open"></i></div>
+                <div class="stat-label">Courses</div>
+                <div class="stat-value" id="sCourses">–</div>
+                <div class="stat-sub">enrolled</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-6">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:rgba(45,181,93,0.15);color:var(--green);"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-label">Avg Score</div>
+                <div class="stat-value" id="sAvgScore">–</div>
+                <div class="stat-sub">out of 100</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- XP Progress -->
+    <div class="chart-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0"><i class="fas fa-bolt me-2" style="color:var(--orange);"></i>XP Progress</h6>
+            <span style="font-size:0.76rem;color:var(--muted);" id="xpStageLabel">Beginner stage</span>
+        </div>
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <div style="font-size:2rem;font-weight:900;color:var(--orange);" id="xpBig">0</div>
+            <div style="color:var(--muted);font-size:0.8rem;">XP earned · <span id="xpToNext">–</span> to next stage</div>
+        </div>
+        <div class="xp-bar-wrap">
+            <div class="xp-bar-fill" id="xpBarFill" style="width:0%;"></div>
+        </div>
+        <div class="d-flex justify-content-between mt-1" style="font-size:0.68rem;color:var(--muted);">
+            <span>Beginner</span><span>Intermediate</span><span>Advanced</span><span>Expert</span>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar me-2" style="color:var(--blue);"></i>Score by Assignment</h6>
+                <canvas id="scoreChart" style="max-height:200px;"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="chart-card">
+                <h6 class="fw-bold mb-3"><i class="fas fa-award me-2" style="color:var(--orange);"></i>Rubric Distribution</h6>
+                <div class="row g-2" id="rubricCards"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance per Course -->
+    <div class="chart-card mb-4">
+        <h6 class="fw-bold mb-3"><i class="fas fa-calendar-check me-2" style="color:var(--cyan);"></i>Attendance per Course</h6>
+        <canvas id="attendanceChart" style="max-height:180px;"></canvas>
+    </div>
+
+    <!-- Course Progress -->
+    <div class="chart-card mb-4">
+        <h6 class="fw-bold mb-3"><i class="fas fa-route me-2" style="color:var(--purple);"></i>Course Progress</h6>
+        <div id="courseProgressList"></div>
+    </div>
+
+    <!-- Grade Details Table -->
+    <div class="chart-card">
+        <h6 class="fw-bold mb-3"><i class="fas fa-star me-2" style="color:#fbbf24;"></i>Grade Details</h6>
+        <div style="overflow-x:auto;">
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Assignment</th>
+                        <th>Course</th>
+                        <th>Score</th>
+                        <th>Max</th>
+                        <th>%</th>
+                        <th>Grade</th>
+                        <th>Retake</th>
+                        <th>Feedback</th>
+                    </tr>
+                </thead>
+                <tbody id="gradesTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    /* ── Auth ── */
+    const token     = localStorage.getItem('token');
+    const role      = localStorage.getItem('role');
+    const stuName   = localStorage.getItem('name')    || 'Student';
+    const stuEmail  = localStorage.getItem('email')   || '–';
+    const stuProgram= localStorage.getItem('program') || '–';
+    const studentId = parseInt(localStorage.getItem('studentId') || '0');
+    if (!token || role !== 'STUDENT') window.location.href = '/login';
+
+    const AUTH = { 'Authorization': 'Bearer ' + token };
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    async function api(url) { try { const r = await fetch(url, { headers: AUTH }); return r.ok ? await r.json() : null; } catch(_) { return null; } }
+    function logout() { localStorage.clear(); window.location.href = '/login'; }
+
+    function smartToggleSidebar(){ if(window.innerWidth<=992){toggleSidebar();}else{collapseSidebar();} }
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('show');
+    }
+    function collapseSidebar() {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+        document.getElementById('topbar').classList.toggle('sb-collapsed');
+        document.getElementById('mainContent').classList.toggle('sb-collapsed');
+    }
+
+    function computeGrade(pct) {
+        if (pct >= 90) return { g:'A+', col:'var(--green)' };
+        if (pct >= 80) return { g:'A',  col:'var(--green)' };
+        if (pct >= 70) return { g:'B+', col:'var(--cyan)' };
+        if (pct >= 60) return { g:'B',  col:'var(--blue)' };
+        if (pct >= 50) return { g:'C',  col:'var(--orange)' };
+        return { g:'F', col:'var(--red)' };
+    }
+
+    // XP stage thresholds
+    const XP_STAGES = [
+        { name:'Beginner',     min:0,    max:500  },
+        { name:'Intermediate', min:500,  max:1500 },
+        { name:'Advanced',     min:1500, max:3000 },
+        { name:'Expert',       min:3000, max:5000 },
+    ];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Identity
+        const init = stuName.charAt(0).toUpperCase();
+        document.getElementById('sidebarAvatar').textContent = init;
+        document.getElementById('sidebarName').textContent   = stuName;
+        document.getElementById('studentInitial').textContent = init;
+        document.getElementById('studentName').textContent    = stuName;
+        document.getElementById('studentMeta').textContent    = `ID: #${studentId} · ${stuEmail} · ${stuProgram}`;
+
+        const [studentData, learningData, attData, subs, enrolledCourses] = await Promise.all([
+            api(`/api/students/${studentId}`),
+            api(`/api/analytics/student/${studentId}/learning`),
+            api(`/api/analytics/attendance/student/${studentId}`),
+            api(`/api/students/${studentId}/submissions`),
+            api(`/api/students/${studentId}/courses`)
+        ]);
+
+        // Status badge
+        const status = studentData?.status || 'ACTIVE';
+        const stColor = status === 'ACTIVE' ? 'var(--green)' : status === 'GRADUATED' ? 'var(--blue)' : 'var(--red)';
+        const stBg    = status === 'ACTIVE' ? 'rgba(45,181,93,0.12)' : status === 'GRADUATED' ? 'rgba(59,130,246,0.12)' : 'rgba(239,68,68,0.12)';
+        document.getElementById('statusBadgeWrap').innerHTML =
+            `<span style="background:${stBg};color:${stColor};border:1px solid ${stColor}44;border-radius:8px;padding:5px 14px;font-size:0.76rem;font-weight:700;">${status}</span>`;
+
+        // Stats
+        const cgpa = learningData?.cgpa10 ?? 0;
+        document.getElementById('sCgpa').textContent        = Number(cgpa).toFixed(2);
+        document.getElementById('sLetterGrade').textContent = learningData?.letterGrade ?? '–';
+        document.getElementById('sXp').textContent          = learningData?.xpPoints ?? 0;
+        document.getElementById('sXpStage').textContent     = (learningData?.xpStage ?? 'Beginner') + ' stage';
+
+        const attPct = attData?.percentage ?? 0;
+        document.getElementById('sAttendance').textContent  = attPct + '%';
+        document.getElementById('sAttDetail').textContent   = `${attData?.present ?? 0} / ${attData?.total ?? 0} present`;
+
+        const graded = (subs||[]).filter(s => s.score != null);
+        document.getElementById('sSubmissions').textContent = graded.length;
+        document.getElementById('sCourses').textContent     = (enrolledCourses||[]).length;
+
+        const avgScore = graded.length ? Math.round(graded.reduce((s,x)=>s+x.score,0)/graded.length) : 0;
+        document.getElementById('sAvgScore').textContent    = avgScore;
+
+        // XP progress bar
+        const xp = learningData?.xpPoints || 0;
+        document.getElementById('xpBig').textContent = xp;
+        document.getElementById('xpStageLabel').textContent = (learningData?.xpStage ?? 'Beginner') + ' stage';
+        let stagePct = 0, toNext = '–';
+        for (const s of XP_STAGES) {
+            if (xp >= s.min && xp < s.max) {
+                stagePct = Math.round(((xp - s.min) / (s.max - s.min)) * 100);
+                toNext = (s.max - xp) + ' XP';
+                break;
+            } else if (xp >= 5000) { stagePct = 100; toNext = 'Max level!'; break; }
+        }
+        document.getElementById('xpBarFill').style.width = stagePct + '%';
+        document.getElementById('xpToNext').textContent = toNext;
+
+        // Score Chart
+        const bestByAssignment = {};
+        graded.forEach(s => {
+            const aid = s.assignment?.assignmentId ?? s.assignmentId;
+            if (!bestByAssignment[aid] || s.score > bestByAssignment[aid].score) bestByAssignment[aid] = s;
+        });
+        const topSubs = Object.values(bestByAssignment);
+
+        if (topSubs.length > 0) {
+            const labels = topSubs.map(s => {
+                const t = s.assignment?.title || 'A#' + (s.assignment?.assignmentId ?? '?');
+                return t.length > 14 ? t.substring(0,12)+'…' : t;
+            });
+            const colors = topSubs.map(s => {
+                const max = s.assignment?.maxScore || 100;
+                const p   = Math.round((s.score/max)*100);
+                return p >= 80 ? 'rgba(45,181,93,0.7)' : p >= 50 ? 'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.7)';
+            });
+            new Chart(document.getElementById('scoreChart'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label:'Score', data: topSubs.map(s=>s.score), backgroundColor: colors, borderRadius: 5, borderWidth: 0 }] },
+                options: { responsive:true, plugins:{ legend:{display:false} },
+                    scales:{ x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7280',font:{size:10}} },
+                             y:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7280',font:{size:10}}, min:0 } } }
+            });
+        } else {
+            document.getElementById('scoreChart').parentElement.innerHTML += `<div style="color:var(--muted);font-size:0.82rem;margin-top:8px;">No graded submissions yet.</div>`;
+        }
+
+        // Rubric
+        const r = learningData?.rubric || {};
+        const rubricData = [
+            { label:'Exemplary',  val:r.exemplary||0,  col:'var(--green)',  bg:'rgba(45,181,93,0.12)' },
+            { label:'Proficient', val:r.proficient||0, col:'var(--blue)',   bg:'rgba(59,130,246,0.12)' },
+            { label:'Developing', val:r.developing||0, col:'var(--orange)', bg:'rgba(245,158,11,0.12)' },
+            { label:'Beginner',   val:r.beginner||0,   col:'var(--muted)',  bg:'rgba(156,163,175,0.08)' },
+        ];
+        document.getElementById('rubricCards').innerHTML = rubricData.map(x => `
+            <div class="col-6">
+                <div class="rubric-box" style="background:${x.bg};border:1px solid ${x.col}33;">
+                    <div style="font-size:1.4rem;font-weight:900;color:${x.col};">${x.val}</div>
+                    <div style="font-size:0.7rem;color:var(--muted);font-weight:600;">${x.label}</div>
+                </div>
+            </div>`).join('');
+
+        // Attendance per Course chart
+        const courses = enrolledCourses || [];
+        if (courses.length > 0) {
+            const attPerCourse = await Promise.all(
+                courses.map(c => api(`/api/analytics/attendance/course/${c.courseId}/student/${studentId}`)
+                    .then(d => ({ title: c.title, pct: d?.percentage ?? 0 }))
+                )
+            );
+            new Chart(document.getElementById('attendanceChart'), {
+                type: 'bar',
+                data: {
+                    labels: attPerCourse.map(x => x.title.length > 16 ? x.title.substring(0,14)+'…' : x.title),
+                    datasets: [{ label:'Attendance %', data: attPerCourse.map(x=>x.pct),
+                        backgroundColor: attPerCourse.map(x => x.pct>=75?'rgba(45,181,93,0.7)':x.pct>=50?'rgba(245,158,11,0.7)':'rgba(239,68,68,0.7)'),
+                        borderRadius:5, borderWidth:0 }]
+                },
+                options: { responsive:true, indexAxis:'y', plugins:{ legend:{display:false} },
+                    scales:{ x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7280',font:{size:10}}, min:0, max:100 },
+                             y:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7280',font:{size:10}} } } }
+            });
+        } else {
+            document.getElementById('attendanceChart').parentElement.innerHTML += `<div style="color:var(--muted);font-size:0.82rem;margin-top:8px;">No course enrollment data.</div>`;
+        }
+
+        // Course Progress
+        const cl = learningData?.continueLearning || [];
+        if (cl.length) {
+            document.getElementById('courseProgressList').innerHTML = cl.map(c => {
+                const pct = Math.max(0, Math.min(100, c.progress || 0));
+                const col = pct >= 75 ? 'var(--green)' : pct >= 50 ? 'var(--orange)' : 'var(--red)';
+                return `
+                <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <div style="flex:1;">
+                        <div style="font-weight:600;font-size:0.88rem;">${esc(c.title)}</div>
+                        <div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">${c.submitted||0}/${c.totalAssignments||0} assignments · ${c.pending||0} pending</div>
+                        <div class="prog-wrap" style="margin-top:6px;">
+                            <div class="prog-fill" style="width:${pct}%;background:${col};"></div>
+                        </div>
+                    </div>
+                    <div style="font-weight:900;color:${col};font-size:1rem;min-width:46px;text-align:right;">${pct}%</div>
+                </div>`;
+            }).join('');
+        } else {
+            document.getElementById('courseProgressList').innerHTML = `<div style="color:var(--muted);padding:16px 0;">No course data available.</div>`;
+        }
+
+        // Fetch all assignments for enrolled courses (for grade table)
+        let allAssigns = [];
+        for (const c of courses) {
+            const list = await api(`/api/assignments/course/${c.courseId}`) || [];
+            allAssigns = allAssigns.concat(list);
+        }
+
+        // Grade Table
+        const tbody = document.getElementById('gradesTableBody');
+        if (!graded.length) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px;">No graded submissions yet.</td></tr>`;
+        } else {
+            tbody.innerHTML = graded.sort((a,b) => (b.score||0)-(a.score||0)).map(s => {
+                const aid  = s.assignment?.assignmentId ?? s.assignmentId;
+                const a    = allAssigns.find(x => x.assignmentId === aid);
+                const aTitle     = a?.title ?? s.assignment?.title ?? 'Assignment #'+aid;
+                const courseTitle= a?.course?.title ?? s.assignment?.course?.title ?? `Course #${a?.courseId ?? '?'}`;
+                const max  = a?.maxScore || s.assignment?.maxScore || 100;
+                const pct  = Math.round((s.score/max)*100);
+                const {g, col} = computeGrade(pct);
+                const retake = s.retakeCount || 0;
+                return `
+                <tr>
+                    <td style="font-weight:600;">${esc(aTitle)}</td>
+                    <td style="color:var(--muted);">${esc(courseTitle)}</td>
+                    <td style="font-weight:700;color:${col};">${s.score}</td>
+                    <td style="color:var(--muted);">${max}</td>
+                    <td style="color:${col};font-weight:700;">${pct}%</td>
+                    <td><span class="grade-pill" style="background:${col}22;color:${col};">${g}</span></td>
+                    <td>${retake > 0 ? `<span style="background:rgba(245,158,11,0.12);color:var(--orange);border-radius:6px;padding:2px 8px;font-size:0.7rem;">Retake #${retake}</span>` : '<span style="color:var(--muted);font-size:0.75rem;">–</span>'}</td>
+                    <td style="color:var(--muted);font-size:0.78rem;">${esc(s.feedback||'–')}</td>
+                </tr>`;
+            }).join('');
+        }
+    });
+</script>
+</body>
+</html>
